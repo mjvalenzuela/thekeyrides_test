@@ -34,7 +34,7 @@ function generateCategoryFilters() {
  * Create individual filter element
  */
 function createFilterElement(categoryKey, category) {
-    const name = category.name; // Only English now
+    const name = category.name_en || category.name_es;
     
     const filterDiv = document.createElement('div');
     filterDiv.className = 'filter-checkbox form-check-label active';
@@ -97,7 +97,7 @@ function generateLegend() {
  * Create individual legend item
  */
 function createLegendItem(categoryKey, category) {
-    const name = category.name; // Only English now
+    const name = category.name_en || category.name_es;
     
     const legendItem = document.createElement('div');
     legendItem.className = 'legend-item';
@@ -227,22 +227,27 @@ function applyEmbeddedStyles() {
 }
 
 /**
- * Setup sidebar functionality with enhanced controls
+ * Setup sidebar functionality with enhanced controls - CORREGIDO PARA MÓVIL
  */
 function setupSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle');
     const sidebarToggleExternal = document.getElementById('sidebar-toggle-external');
+    const toggleIcon = sidebarToggle?.querySelector('i');
     
-    if (!sidebar || !sidebarToggle) {
-        console.warn('Sidebar elements not found');
-        return;
+    if (!sidebar || !sidebarToggle) return;
+    
+    // CONFIGURACIÓN INICIAL PARA MÓVIL
+    if (window.innerWidth <= 768) {
+        sidebar.classList.add('collapsed');
+        if (toggleIcon) {
+            toggleIcon.className = 'bi bi-chevron-right';
+        }
     }
     
     // Internal toggle button
     sidebarToggle.addEventListener('click', (e) => {
         e.preventDefault();
-        e.stopPropagation();
         toggleSidebar();
     });
     
@@ -250,12 +255,11 @@ function setupSidebar() {
     if (sidebarToggleExternal) {
         sidebarToggleExternal.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
             showSidebar();
         });
     }
     
-    // Keyboard shortcuts
+    // Keyboard shortcut (ESC to close, CTRL+M to toggle)
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !sidebar.classList.contains('collapsed')) {
             hideSidebar();
@@ -266,28 +270,57 @@ function setupSidebar() {
         }
     });
     
-    // Close sidebar when clicking outside on mobile
+    // MEJORADO: Close sidebar cuando clicking fuera en móvil
     document.addEventListener('click', (e) => {
         if (window.innerWidth <= 768) {
             const isClickInsideSidebar = sidebar.contains(e.target);
-            const isToggleButton = sidebarToggleExternal && sidebarToggleExternal.contains(e.target);
-            const isInternalToggle = sidebarToggle.contains(e.target);
+            const isToggleButton = sidebarToggle.contains(e.target) || 
+                                  (sidebarToggleExternal && sidebarToggleExternal.contains(e.target));
             
-            if (!isClickInsideSidebar && !isToggleButton && !isInternalToggle && !sidebar.classList.contains('collapsed')) {
+            if (!isClickInsideSidebar && !isToggleButton && !sidebar.classList.contains('collapsed')) {
                 hideSidebar();
             }
         }
     });
     
-    console.log('Sidebar setup completed');
+    // Handle window resize
+    window.addEventListener('resize', debounce(handleWindowResize, 300));
 }
 
 /**
- * Toggle sidebar visibility
+ * Handle window resize - NUEVO
+ */
+function handleWindowResize() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    
+    // En móvil, asegurar que el sidebar esté oculto por defecto
+    if (window.innerWidth <= 768) {
+        if (!sidebar.classList.contains('collapsed')) {
+            // Solo cerrar si no está siendo usado activamente
+            const lastInteraction = sidebar.dataset.lastInteraction || 0;
+            if (Date.now() - lastInteraction > 5000) { // 5 segundos
+                hideSidebar();
+            }
+        }
+    } else {
+        // En desktop, restaurar estado normal si estaba colapsado por móvil
+        const wasCollapsedForMobile = sidebar.dataset.collapsedForMobile === 'true';
+        if (wasCollapsedForMobile) {
+            showSidebar();
+            sidebar.dataset.collapsedForMobile = 'false';
+        }
+    }
+}
+
+/**
+ * Toggle sidebar visibility - CORREGIDO
  */
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
+    
+    // Marcar interacción
+    sidebar.dataset.lastInteraction = Date.now().toString();
     
     if (sidebar.classList.contains('collapsed')) {
         showSidebar();
@@ -297,74 +330,69 @@ function toggleSidebar() {
 }
 
 /**
- * Show sidebar
+ * Show sidebar - CORREGIDO
  */
 function showSidebar() {
     const sidebar = document.getElementById('sidebar');
     const toggleIcon = document.querySelector('#sidebar-toggle i');
     
-    if (!sidebar) return;
-    
     sidebar.classList.remove('collapsed');
+    sidebar.dataset.collapsedForMobile = 'false';
     
     if (toggleIcon) {
         toggleIcon.className = 'bi bi-chevron-left';
     }
     
-    // Store preference
-    try {
+    // Store preference only for desktop
+    if (window.innerWidth > 768) {
         localStorage.setItem('sidebarCollapsed', 'false');
-    } catch (e) {
-        console.warn('Could not save sidebar state to localStorage');
     }
     
-    // Trigger map resize
+    // Trigger resize event for map
     setTimeout(() => {
-        if (window.map && typeof window.map.resize === 'function') {
+        if (window.map && window.map.resize) {
             window.map.resize();
         }
-    }, 350);
-    
-    console.log('Sidebar shown');
+    }, 300);
 }
 
 /**
- * Hide sidebar
+ * Hide sidebar - CORREGIDO
  */
 function hideSidebar() {
     const sidebar = document.getElementById('sidebar');
     const toggleIcon = document.querySelector('#sidebar-toggle i');
     
-    if (!sidebar) return;
-    
     sidebar.classList.add('collapsed');
+    
+    // Marcar si se cerró por ser móvil
+    if (window.innerWidth <= 768) {
+        sidebar.dataset.collapsedForMobile = 'true';
+    }
     
     if (toggleIcon) {
         toggleIcon.className = 'bi bi-chevron-right';
     }
     
-    // Store preference
-    try {
+    // Store preference only for desktop
+    if (window.innerWidth > 768) {
         localStorage.setItem('sidebarCollapsed', 'true');
-    } catch (e) {
-        console.warn('Could not save sidebar state to localStorage');
     }
     
-    // Trigger map resize
+    // Trigger resize event for map
     setTimeout(() => {
-        if (window.map && typeof window.map.resize === 'function') {
+        if (window.map && window.map.resize) {
             window.map.resize();
         }
-    }, 350);
-    
-    console.log('Sidebar hidden');
+    }, 300);
 }
 
 /**
- * Restore sidebar state from localStorage
+ * Restore sidebar state from localStorage - CORREGIDO
  */
 function restoreSidebarState() {
-    try {
+    // Solo restaurar estado en desktop
+    if (window.innerWidth > 768) {
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         
         if (isCollapsed) {
@@ -372,12 +400,9 @@ function restoreSidebarState() {
         } else {
             showSidebar();
         }
-        
-        console.log('Sidebar state restored:', isCollapsed ? 'collapsed' : 'expanded');
-    } catch (e) {
-        console.warn('Could not restore sidebar state from localStorage');
-        // Default to shown
-        showSidebar();
+    } else {
+        // En móvil siempre empezar oculto
+        hideSidebar();
     }
 }
 
@@ -385,63 +410,13 @@ function restoreSidebarState() {
  * Validate required configuration
  */
 function validateRequiredConfig() {
-    const requiredObjects = ['MAP_CONFIG', 'MAP_TOKENS', 'SHEETS_CONFIG'];
+    const requiredObjects = ['MAP_CONFIG', 'MAP_TOKENS'];
     const missing = requiredObjects.filter(obj => typeof window[obj] === 'undefined');
     
     if (missing.length > 0) {
         console.error('Missing configuration objects:', missing);
-        console.error('Make sure config/config.js is loaded and contains MAP_CONFIG, MAP_TOKENS, and SHEETS_CONFIG');
-        
-        // Create minimal fallback config to prevent crashes
-        if (typeof window.MAP_CONFIG === 'undefined') {
-            window.MAP_CONFIG = {
-                center: [-86.7308, 21.2313],
-                zoom: 14,
-                minZoom: 10,
-                maxZoom: 18,
-                style: 'mapbox://styles/mapbox/streets-v12',
-                clusterSettings: {
-                    enableClustering: true,
-                    clusterMaxZoom: 14,
-                    clusterRadius: 50
-                },
-                categories: {
-                    office: { name: 'Offices', color: '#007cbf', icon: 'bi-building' },
-                    pickup: { name: 'Pickup Points', color: '#28a745', icon: 'bi-geo-alt' },
-                    restaurant: { name: 'Restaurants', color: '#dc3545', icon: 'bi-cup-hot' },
-                    tourist: { name: 'Tourist Attractions', color: '#ffc107', icon: 'bi-camera' },
-                    shop: { name: 'Shops', color: '#6f42c1', icon: 'bi-bag' },
-                    route: { name: 'Routes', color: '#fd7e14', icon: 'bi-signpost' }
-                }
-            };
-            console.warn('Using fallback MAP_CONFIG');
-        }
-        
-        if (typeof window.MAP_TOKENS === 'undefined') {
-            window.MAP_TOKENS = {
-                mapbox: 'pk.eyJ1IjoieW91cl91c2VybmFtZSIsImEiOiJjbGV4YW1wbGUifQ.example-token-here'
-            };
-            console.warn('Using fallback MAP_TOKENS - UPDATE WITH REAL TOKENS!');
-        }
-        
-        if (typeof window.SHEETS_CONFIG === 'undefined') {
-            window.SHEETS_CONFIG = {
-                url: '', // No default URL - must be configured
-                gid: 0,
-                cacheTimeout: 2 * 60 * 1000,
-                autoRefresh: true
-            };
-            console.error('SHEETS_CONFIG missing! You must configure the Google Sheets URL in config/config.js');
-        }
-        
-        showToast('Configuration loaded with defaults. Check console for details.', 'info', 5000);
-        return true; // Continue despite missing config
-    }
-    
-    // Validate Mapbox token
-    if (!window.MAP_TOKENS.mapbox || window.MAP_TOKENS.mapbox.includes('example')) {
-        console.warn('Mapbox token appears to be invalid or example token');
-        showToast('Warning: Please update Mapbox token in config/config.js', 'warning', 8000);
+        showToast('Map configuration error', 'error');
+        return false;
     }
     
     return true;
@@ -453,7 +428,7 @@ function validateRequiredConfig() {
 function initializeUtils() {
     applyEmbeddedStyles();
     setupSidebar();
-    restoreSidebarState(); // Restore saved state
+    restoreSidebarState();
     generateCategoryFilters();
     generateLegend();
 }
@@ -535,7 +510,6 @@ function isPointInBounds(lng, lat, bounds) {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing utilities...');
     if (validateRequiredConfig()) {
         initializeUtils();
     }
@@ -550,8 +524,3 @@ window.throttle = throttle;
 window.sanitizeText = sanitizeText;
 window.formatCoordinates = formatCoordinates;
 window.calculateDistance = calculateDistance;
-
-// Expose sidebar functions globally
-window.toggleSidebar = toggleSidebar;
-window.showSidebar = showSidebar;
-window.hideSidebar = hideSidebar;

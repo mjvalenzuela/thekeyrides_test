@@ -30,10 +30,23 @@ function initializeMap() {
         setupMapEvents();
         setupMapControls();
         setupAutoUpdateListener();
+        setupMobileDefaults(); // Nueva función para móvil
 
     } catch (error) {
         console.error('Error initializing map:', error);
         showToast(getText('error_load'), 'error');
+    }
+}
+
+/**
+ * Setup default behavior for mobile devices
+ */
+function setupMobileDefaults() {
+    // En móvil, ocultar sidebar por defecto
+    if (window.innerWidth <= 768) {
+        setTimeout(() => {
+            hideSidebar();
+        }, 100);
     }
 }
 
@@ -70,19 +83,17 @@ function setupAutoUpdateListener() {
  * Validate configuration before initialization
  */
 function validateConfiguration() {
-    if (typeof MAP_TOKENS === 'undefined' || typeof MAP_CONFIG === 'undefined' || typeof SHEETS_CONFIG === 'undefined') {
-        throw new Error('MAP_TOKENS, MAP_CONFIG, or SHEETS_CONFIG is not defined. Check that config/config.js is loading correctly.');
+    if (typeof MAP_TOKENS === 'undefined') {
+        throw new Error('MAP_TOKENS is not defined. Check that config/config.js is loading correctly.');
     }
 
-    if (!MAP_TOKENS.mapbox) {
+    if (!MAP_TOKENS.mapbox || MAP_TOKENS.mapbox === 'your_real_token_here') {
         throw new Error('Mapbox token not configured. Edit config/config.js and add your real token.');
     }
 
     if (typeof mapboxgl === 'undefined') {
         throw new Error('Mapbox GL JS is not loaded correctly.');
     }
-    
-    console.log('Map configuration validated successfully');
 }
 
 /**
@@ -99,10 +110,63 @@ function setupMapEvents() {
  * Handle map load event
  */
 function handleMapLoad() {
+    loadMapIcons(); // Cargar iconos primero
     setupClusterLayers();
     loadMapData();
     setupMapInteractions();
     toggleLoading(false);
+}
+
+/**
+ * Load custom icons for categories - NUEVO
+ */
+function loadMapIcons() {
+    const iconPromises = [];
+    
+    Object.entries(MAP_CONFIG.categories).forEach(([categoryKey, category]) => {
+        if (category.icon && category.icon.includes('bi-')) {
+            // Crear icono SVG para Bootstrap Icons
+            const iconName = category.icon.replace('bi bi-', '');
+            const svg = createSVGIcon(iconName, category.color);
+            
+            const promise = new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    if (!map.hasImage(`icon-${categoryKey}`)) {
+                        map.addImage(`icon-${categoryKey}`, img);
+                    }
+                    resolve();
+                };
+                img.src = 'data:image/svg+xml;base64,' + btoa(svg);
+            });
+            
+            iconPromises.push(promise);
+        }
+    });
+    
+    return Promise.all(iconPromises);
+}
+
+/**
+ * Create SVG icon - NUEVO
+ */
+function createSVGIcon(iconName, color) {
+    // Mapeo de iconos Bootstrap a SVG paths
+    const iconPaths = {
+        'building': 'M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.495V14.5h4.5a.5.5 0 0 0 .5-.5V2a.5.5 0 0 0-.5-.5H1.5A.5.5 0 0 0 1 2v12a.5.5 0 0 0 .5.5h5zM3 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm6-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z',
+        'geo-alt': 'M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+        'cup-hot': 'M.5 6a.5.5 0 0 0-.488.608l1.652 7.434A2.5 2.5 0 0 0 4.104 16h5.792a2.5 2.5 0 0 0 2.44-1.958l.131-.59a3 3 0 0 0 1.3-5.854l.221-.99A.5.5 0 0 0 13.5 6H.5zM13 12.5a2.01 2.01 0 0 1-.316-.025l.081-.36.063-.283a1 1 0 0 0-1.97-.347l-.483 2.183a1.5 1.5 0 0 1-1.464 1.179H4.104a1.5 1.5 0 0 1-1.464-1.179L1.124 8.5h11.26l-.045.201-.183.82c.292.15.54.37.729.631.15.2.286.434.386.699.014.039.028.078.042.118.093.282.154.583.154.898zM4.553 7.776c.82-1.641 1.717-2.753 2.093-3.13l.708.708c-.29.29-1.128 1.311-1.907 2.87l-.894-.448z',
+        'camera': 'M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+        'shop': 'M2.97 1.35A1 1 0 0 1 3.73 1h8.54a1 1 0 0 1 .76.35l2.609 3.044A1.5 1.5 0 0 1 16 5.37v.255a2.375 2.375 0 0 1-4.25 1.458A2.371 2.371 0 0 1 9.875 8 2.37 2.37 0 0 1 8 7.083 2.37 2.37 0 0 1 6.125 8a2.37 2.37 0 0 1-1.875-.917A2.375 2.375 0 0 1 0 5.625V5.37a1.5 1.5 0 0 1 .361-.976l2.61-3.045zm1.78 4.275a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 1 0 2.75 0V5.37a.5.5 0 0 0-.12-.325L12.27 2H3.73L1.12 5.045A.5.5 0 0 0 1 5.37v.255a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0zM1.5 8.5A.5.5 0 0 1 2 9v6h1v-5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5h6V9a.5.5 0 0 1 1 0v6.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 1 .5-.5zM4 15h3v-5H4v5z',
+        'arrow-right': 'M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z'
+    };
+    
+    const path = iconPaths[iconName] || iconPaths['geo-alt']; // fallback
+    
+    return `<svg width="24" height="24" viewBox="0 0 16 16" fill="${color}" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8" cy="8" r="8" fill="white" stroke="${color}" stroke-width="2"/>
+        <path d="${path}" fill="${color}"/>
+    </svg>`;
 }
 
 /**
@@ -436,7 +500,7 @@ function createMapSource() {
 }
 
 /**
- * Create clustering layers
+ * Create clustering layers - MODIFICADO para iconos
  */
 function createClusterLayers() {
     // Cluster layer
@@ -485,38 +549,47 @@ function createClusterLayers() {
         }
     });
     
-    // Individual points layer
+    // Individual points layer with ICONS
     map.addLayer({
         id: 'unclustered-point',
-        type: 'circle',
+        type: 'symbol',
         source: 'points',
         filter: ['!', ['has', 'point_count']],
-        paint: {
-            'circle-color': getCategoryColorExpression(),
-            'circle-radius': [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                10, 10,
-                15, 14,
-                18, 18
-            ],
-            'circle-stroke-width': 3,
-            'circle-stroke-color': '#ffffff',
-            'circle-opacity': 0.95,
-            'circle-stroke-opacity': [
+        layout: {
+            'icon-image': getCategoryIconExpression(),
+            'icon-size': [
                 'interpolate',
                 ['linear'],
                 ['zoom'],
                 10, 0.8,
-                18, 1
-            ]
+                15, 1.0,
+                18, 1.2
+            ],
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': false
         }
     });
 }
 
 /**
- * Generate color expression by category
+ * Generate icon expression by category - NUEVO
+ */
+function getCategoryIconExpression() {
+    const iconExpression = ['case'];
+    
+    Object.keys(MAP_CONFIG.categories).forEach(category => {
+        iconExpression.push(
+            ['==', ['get', 'category'], category],
+            `icon-${category}`
+        );
+    });
+    
+    iconExpression.push('icon-office'); // Default icon
+    return iconExpression;
+}
+
+/**
+ * Generate color expression by category - MANTENIDO para fallback
  */
 function getCategoryColorExpression() {
     const colorExpression = ['case'];
@@ -640,14 +713,17 @@ function updateClusterVisibility() {
 }
 
 /**
- * Show point popup
+ * Show point popup - CORREGIDO para mostrar nombre correcto
  */
 function showPointPopup(feature, lngLat) {
     const properties = feature.properties;
     const category = MAP_CONFIG.categories[properties.category];
-    const categoryName = category ? category.name : 'Unknown'; // Only English name
+    const categoryName = category ? (category.name_en || category.name_es) : 'Unknown';
 
-    const popupContent = createPopupContent(properties, category, categoryName, lngLat);
+    // CORREGIDO: usar los nombres reales del punto
+    const title = properties.nombre_en || properties.nombre_es || properties.name || 'Unnamed Point';
+
+    const popupContent = createPopupContent(properties, category, categoryName, lngLat, title);
 
     new mapboxgl.Popup({
         offset: 25,
@@ -660,11 +736,10 @@ function showPointPopup(feature, lngLat) {
 }
 
 /**
- * Create popup content
+ * Create popup content - CORREGIDO con título correcto
  */
-function createPopupContent(properties, category, categoryName, lngLat) {
-    const title = properties.nombre_en || 'Unnamed'; // Only English name
-    const description = properties.descripcion_en; // Only English description
+function createPopupContent(properties, category, categoryName, lngLat, title) {
+    const description = properties.descripcion_en || properties.descripcion_es || properties.description || '';
     const color = category ? category.color : '#000';
     
     return `
@@ -711,6 +786,9 @@ function closeAllPopups() {
 async function loadMapData() {
     try {
         toggleLoading(true);
+        
+        // Wait for icons to load first
+        await loadMapIcons();
         
         // Load data from Google Sheets using the data service
         const geoJsonData = await window.dataService.loadData();
@@ -809,8 +887,9 @@ function updateCategoryFiltersFromData(geoJsonData) {
     console.log('Categories found in data:', Array.from(categoriesInData));
 }
 
-// Create test data
-
+/**
+ * Create test data
+ */
 function createTestData() {
     return {
         type: 'FeatureCollection',
@@ -920,8 +999,9 @@ function createTestData() {
     };
 }
 
-// Calculate route to destination
-
+/**
+ * Calculate route to destination
+ */
 function calculateRoute(destination) {
     if (!userLocation) {
         showToast('Please enable location first', 'info', 3000);
@@ -936,8 +1016,9 @@ function calculateRoute(destination) {
     // or integrate with Google Maps/Apple Maps
 }
 
-// Toggle category filter
-
+/**
+ * Toggle category filter
+ */
 function toggleCategoryFilter(category, enabled) {
     try {
         if (enabled) {
@@ -958,8 +1039,9 @@ function toggleCategoryFilter(category, enabled) {
     }
 }
 
-// Update filter UI
-
+/**
+ * Update filter UI
+ */
 function updateFilterUI(category, enabled) {
     const filterElement = document.querySelector(`#filter-${category}`);
     if (filterElement) {

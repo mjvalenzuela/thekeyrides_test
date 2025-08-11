@@ -96,7 +96,7 @@ body {
     display: flex;
 }
 
-/* Sidebar transitions and mobile backdrop */
+/* SIDEBAR CORREGIDO - Problema 1 y 2 */
 #sidebar {
     position: fixed;
     top: 0;
@@ -113,27 +113,29 @@ body {
     flex-direction: column;
 }
 
+/* Desktop - sidebar collapsed */
 #sidebar.collapsed {
     transform: translateX(-300px);
 }
 
-/* Mobile backdrop when sidebar is open */
+/* Mobile - cambios importantes */
 @media (max-width: 768px) {
     #sidebar {
-        width: 100%;
-        transform: translateX(-100%);
+        width: 85%; /* No 100% que es muy ancho */
+        max-width: 320px;
+        transform: translateX(-100%); /* Oculto por defecto en móvil */
         box-shadow: var(--shadow-xl);
     }
     
     #sidebar.collapsed {
-        transform: translateX(-100%);
+        transform: translateX(-100%); /* Mantener oculto */
     }
     
     #sidebar:not(.collapsed) {
-        transform: translateX(0);
+        transform: translateX(0); /* Mostrar cuando no está collapsed */
     }
     
-    /* Backdrop for mobile */
+    /* Backdrop para móvil */
     #sidebar:not(.collapsed)::before {
         content: '';
         position: fixed;
@@ -218,11 +220,12 @@ body {
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
 }
 
+/* Mostrar botón externo cuando sidebar está collapsed */
 #sidebar.collapsed + #sidebar-toggle-external {
     display: flex;
 }
 
-/* Map */
+/* MAPA CORREGIDO */
 #map {
     width: 100%;
     height: 100%;
@@ -231,7 +234,14 @@ body {
 }
 
 #sidebar.collapsed ~ #map {
-    margin-left: 50px;
+    margin-left: 0; /* Corregido - era 50px */
+}
+
+/* En móvil, el mapa siempre ocupa toda la pantalla */
+@media (max-width: 768px) {
+    #map {
+        margin-left: 0 !important;
+    }
 }
 
 /* Control groups within sidebar */
@@ -321,12 +331,15 @@ body {
     font-size: 14px;
 }
 
-/* Location controls */
+/* CONTROLES DE UBICACIÓN CORREGIDOS - Problema 4 */
 #location-controls {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1000;
+    z-index: 1100; /* Mayor z-index que otros controles */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 #locate-btn {
@@ -342,6 +355,7 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    order: -1; /* Forzar que esté arriba de otros controles */
 }
 
 #locate-btn:hover {
@@ -398,8 +412,31 @@ body {
     border-radius: 8px;
     box-shadow: var(--shadow-md);
     border: 1px solid var(--border-light);
+    margin-top: 60px !important; /* Dar espacio al botón de ubicación */
 }
 
 .mapboxgl-ctrl button {
     border-radius: 6px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #sidebar-toggle-external {
+        display: flex !important;
+        top: 15px;
+        left: 15px;
+    }
+    
+    #location-controls {
+        top: 15px;
+        right: 15px;
+    }
+    
+    #legend {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+        max-width: none;
+        padding: 16px;
+    }
 }
