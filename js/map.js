@@ -809,9 +809,8 @@ function updateCategoryFiltersFromData(geoJsonData) {
     console.log('Categories found in data:', Array.from(categoriesInData));
 }
 
-/**
- * Create test data
- */
+// Create test data
+
 function createTestData() {
     return {
         type: 'FeatureCollection',
@@ -921,9 +920,8 @@ function createTestData() {
     };
 }
 
-/**
- * Calculate route to destination
- */
+// Calculate route to destination
+
 function calculateRoute(destination) {
     if (!userLocation) {
         showToast('Please enable location first', 'info', 3000);
@@ -938,9 +936,8 @@ function calculateRoute(destination) {
     // or integrate with Google Maps/Apple Maps
 }
 
-/**
- * Toggle category filter
- */
+// Toggle category filter
+
 function toggleCategoryFilter(category, enabled) {
     try {
         if (enabled) {
@@ -961,9 +958,8 @@ function toggleCategoryFilter(category, enabled) {
     }
 }
 
-/**
- * Update filter UI
- */
+// Update filter UI
+
 function updateFilterUI(category, enabled) {
     const filterElement = document.querySelector(`#filter-${category}`);
     if (filterElement) {

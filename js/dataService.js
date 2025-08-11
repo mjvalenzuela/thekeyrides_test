@@ -112,20 +112,37 @@ class DataService {
      */
     parseCSV(csvText) {
         const lines = csvText.trim().split('\n');
+        
+        if (lines.length < 2) {
+            console.warn('CSV appears to be empty or has no data rows');
+            return [];
+        }
+        
         const headers = this.parseCSVLine(lines[0]);
+        console.log('CSV Headers found:', headers);
+        
         const data = [];
 
         for (let i = 1; i < lines.length; i++) {
             const values = this.parseCSVLine(lines[i]);
+            
+            // Skip empty lines
+            if (values.length === 0 || values.every(val => !val || val.trim() === '')) {
+                continue;
+            }
+            
             if (values.length === headers.length) {
                 const row = {};
                 headers.forEach((header, index) => {
                     row[header.trim()] = values[index] ? values[index].trim() : '';
                 });
                 data.push(row);
+            } else {
+                console.warn(`Row ${i + 1} has ${values.length} values but expected ${headers.length}`, values);
             }
         }
 
+        console.log(`Parsed ${data.length} data rows from CSV`);
         return data;
     }
 
@@ -183,13 +200,23 @@ class DataService {
                     return;
                 }
 
-                // Extract coordinates - adjust these field names based on your sheet structure
-                const lat = this.parseCoordinate(row['Latitude'] || row['lat'] || row['Lat']);
-                const lng = this.parseCoordinate(row['Longitude'] || row['lng'] || row['Lng'] || row['lon']);
+                // Extract coordinates - handle different field names and formats
+                const latField = row['Lat'] || row['Latitude'] || row['lat'];
+                const lngField = row['Lng'] || row['Longitude'] || row['lng'] || row['lon'];
+                
+                const lat = this.parseCoordinate(latField);
+                const lng = this.parseCoordinate(lngField);
 
                 // Skip if coordinates are invalid
                 if (!this.isValidCoordinate(lat, lng)) {
-                    console.warn(`Skipping row ${index + 1}: Invalid coordinates`, { lat, lng, row });
+                    console.warn(`Skipping row ${index + 1}: Invalid coordinates`, { 
+                        originalLat: latField,
+                        originalLng: lngField,
+                        parsedLat: lat, 
+                        parsedLng: lng, 
+                        name: row['NamePoi'] || row['Name'] || row['name'] || `Row ${index + 1}`,
+                        rowData: row
+                    });
                     return;
                 }
 
@@ -208,16 +235,18 @@ class DataService {
                         id: row['ID'] || row['id'] || `point_${index + 1}`,
                         category: category,
                         
-                        // Names (English only)
-                        nombre_en: row['Name'] || row['name'] || row['Name_EN'] || row['Title'] || `Point ${index + 1}`,
+                        // Names (from your sheet structure)
+                        nombre_en: row['NamePoi'] || row['Name'] || row['name'] || `Point ${index + 1}`,
                         
-                        // Descriptions (English only) 
-                        descripcion_en: row['Description'] || row['description'] || row['Description_EN'] || '',
+                        // Descriptions
+                        descripcion_en: row['Review'] || row['Description'] || row['description'] || '',
                         
-                        // Additional properties
+                        // Additional properties (matching your sheet columns)
                         horario: row['Schedule'] || row['schedule'] || row['Hours'] || row['hours'] || '',
                         telefono: row['Phone'] || row['phone'] || row['Telephone'] || row['telephone'] || '',
-                        website: row['Website'] || row['website'] || row['URL'] || row['url'] || '',
+                        website: row['URLRedirect'] || row['Website'] || row['website'] || row['URL'] || row['url'] || '',
+                        address: row['Address'] || row['address'] || '',
+                        image: row['URLImage'] || row['image'] || '',
                         
                         // Status
                         activo: this.parseBoolean(row['Active'] || row['active'] || row['Enabled'] || row['enabled'] || 'true'),
@@ -256,11 +285,23 @@ class DataService {
     parseCoordinate(value) {
         if (!value || value === '') return null;
         
-        // Remove any non-numeric characters except decimal point and minus sign
-        const cleaned = value.toString().replace(/[^\d.-]/g, '');
+        // Convert to string first
+        let cleaned = value.toString();
+        
+        // Replace comma with dot for decimal separator (common in European/Latin formats)
+        cleaned = cleaned.replace(',', '.');
+        
+        // Remove any other non-numeric characters except decimal point and minus sign
+        cleaned = cleaned.replace(/[^\d.-]/g, '');
+        
         const parsed = parseFloat(cleaned);
         
-        return isNaN(parsed) ? null : parsed;
+        if (isNaN(parsed)) {
+            console.warn(`Could not parse coordinate: "${value}" -> "${cleaned}"`);
+            return null;
+        }
+        
+        return parsed;
     }
 
     /**
@@ -277,36 +318,44 @@ class DataService {
      */
     mapCategory(categoryString) {
         const categoryMap = {
+            // From your Google Sheet categories
+            'head office / point of contact': 'office',
+            'head office': 'office',
+            'point of contact': 'office',
             'office': 'office',
             'oficina': 'office',
             'headquarters': 'office',
             
+            'drop-off / pick-up stations': 'pickup',
+            'drop-off': 'pickup',
+            'pick-up': 'pickup',
             'pickup': 'pickup',
             'station': 'pickup',
             'stop': 'pickup',
             'estacion': 'pickup',
             'parada': 'pickup',
             
+            'restaurants': 'restaurant',
             'restaurant': 'restaurant',
             'restaurante': 'restaurant',
             'food': 'restaurant',
             'comida': 'restaurant',
             
+            'recommended tourist spots': 'tourist',
+            'tourist spots': 'tourist',
             'tourist': 'tourist',
             'tourism': 'tourist',
             'attraction': 'tourist',
             'turismo': 'tourist',
             'atraccion': 'tourist',
             
+            'additional stores or services': 'shop',
+            'stores': 'shop',
+            'services': 'shop',
             'shop': 'shop',
             'store': 'shop',
             'tienda': 'shop',
-            'shopping': 'shop',
-            
-            'route': 'route',
-            'ruta': 'route',
-            'path': 'route',
-            'camino': 'route'
+            'shopping': 'shop'
         };
 
         return categoryMap[categoryString] || 'office'; // Default to office
