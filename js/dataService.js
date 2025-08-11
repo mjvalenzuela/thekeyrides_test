@@ -20,7 +20,7 @@ class DataService {
         this.csvUrl = `${sheetsConfig.url}/export?format=csv&gid=${sheetsConfig.gid || 0}`;
         this.cache = null;
         this.lastFetch = null;
-        this.cacheTimeout = sheetsConfig.cacheTimeout || 2 * 60 * 1000; // Default 2 minutes
+        this.cacheTimeout = sheetsConfig.cacheTimeout || 10 * 60 * 1000; // Default 10 minutes
         this.autoRefreshInterval = null;
         
         // Setup auto-refresh if enabled
@@ -36,7 +36,7 @@ class DataService {
     }
 
     /**
-     * Setup automatic refresh every 2 minutes
+     * Setup automatic refresh every 10 minutes
      */
     setupAutoRefresh() {
         // Clear any existing interval

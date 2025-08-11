@@ -16,19 +16,13 @@ const TEXTS = {
 };
 
 /**
- * Generate category filters - CORREGIDO para mostrar nombres correctos
+ * Generate category filters
  */
 function generateCategoryFilters() {
     const container = document.querySelector('.filters-container');
     if (!container) return;
     
     container.innerHTML = '';
-    
-    // Verificar que MAP_CONFIG existe y tiene categorías
-    if (!window.MAP_CONFIG || !window.MAP_CONFIG.categories) {
-        console.error('MAP_CONFIG or categories not found');
-        return;
-    }
     
     Object.entries(MAP_CONFIG.categories).forEach(([categoryKey, category]) => {
         const filterElement = createFilterElement(categoryKey, category);
@@ -37,13 +31,10 @@ function generateCategoryFilters() {
 }
 
 /**
- * Create individual filter element - CORREGIDO
+ * Create individual filter element
  */
 function createFilterElement(categoryKey, category) {
-    // Asegurar que tengamos un nombre válido
-    const name = category.name_en || category.name_es || category.name || categoryKey;
-    const color = category.color || '#007cbf';
-    const icon = category.icon || 'bi bi-geo-alt';
+    const name = category.name_en || category.name_es;
     
     const filterDiv = document.createElement('div');
     filterDiv.className = 'filter-checkbox form-check-label active';
@@ -51,7 +42,7 @@ function createFilterElement(categoryKey, category) {
     filterDiv.innerHTML = `
         <input type="checkbox" id="filter-${categoryKey}" value="${categoryKey}" 
                class="form-check-input me-2" checked>
-        <i class="${icon} category-icon me-1" style="color: ${color}"></i>
+        <i class="${category.icon} category-icon me-1" style="color: ${category.color}"></i>
         <span>${name}</span>
     `;
     
@@ -76,11 +67,7 @@ function createFilterChangeHandler(categoryKey, filterDiv) {
             filterDiv.classList.toggle('active', isChecked);
             
             // Update filters
-            if (window.toggleCategoryFilter) {
-                toggleCategoryFilter(categoryKey, isChecked);
-            } else {
-                console.warn('toggleCategoryFilter function not available');
-            }
+            toggleCategoryFilter(categoryKey, isChecked);
             
         } catch (error) {
             console.error('Filter error:', error);
@@ -92,25 +79,13 @@ function createFilterChangeHandler(categoryKey, filterDiv) {
 }
 
 /**
- * Generate legend - CORREGIDO usando la función mejorada
+ * Generate legend
  */
 function generateLegend() {
-    // Si existe la función mejorada, usarla
-    if (window.generateEnhancedLegend) {
-        window.generateEnhancedLegend();
-        return;
-    }
-    
-    // Fallback a la versión original
     const container = document.getElementById('legend-items');
     if (!container) return;
     
     container.innerHTML = '';
-    
-    if (!window.MAP_CONFIG || !window.MAP_CONFIG.categories) {
-        console.error('MAP_CONFIG or categories not found');
-        return;
-    }
     
     Object.entries(MAP_CONFIG.categories).forEach(([categoryKey, category]) => {
         const legendItem = createLegendItem(categoryKey, category);
@@ -119,54 +94,22 @@ function generateLegend() {
 }
 
 /**
- * Create individual legend item - CORREGIDO
+ * Create individual legend item
  */
 function createLegendItem(categoryKey, category) {
-    const name = category.name_en || category.name_es || category.name || categoryKey;
-    const color = category.color || '#007cbf';
+    const name = category.name_en || category.name_es;
     
     const legendItem = document.createElement('div');
     legendItem.className = 'legend-item';
     legendItem.innerHTML = `
         <div class="legend-icon" 
-             style="background-color: ${color}"
+             style="background-color: ${category.color}"
              data-category="${categoryKey}">
         </div>
         <span>${name}</span>
     `;
     
     return legendItem;
-}
-
-/**
- * Initialize utilities with error handling - MEJORADO
- */
-function initializeUtils() {
-    try {
-        applyEmbeddedStyles();
-        setupSidebar();
-        restoreSidebarState();
-        
-        // Esperar a que MAP_CONFIG esté disponible antes de generar filtros y leyenda
-        if (window.MAP_CONFIG && window.MAP_CONFIG.categories) {
-            generateCategoryFilters();
-            generateLegend();
-        } else {
-            // Retry después de un breve delay
-            setTimeout(() => {
-                if (window.MAP_CONFIG && window.MAP_CONFIG.categories) {
-                    generateCategoryFilters();
-                    generateLegend();
-                } else {
-                    console.error('MAP_CONFIG still not available after delay');
-                    showToast('Configuration not loaded properly', 'error');
-                }
-            }, 500);
-        }
-    } catch (error) {
-        console.error('Error initializing utils:', error);
-        showToast('Error initializing interface', 'error');
-    }
 }
 
 /**
@@ -480,6 +423,17 @@ function validateRequiredConfig() {
 }
 
 /**
+ * Initialize utilities
+ */
+function initializeUtils() {
+    applyEmbeddedStyles();
+    setupSidebar();
+    restoreSidebarState();
+    generateCategoryFilters();
+    generateLegend();
+}
+
+/**
  * Debounce function to limit execution frequency
  */
 function debounce(func, wait) {
@@ -570,6 +524,3 @@ window.throttle = throttle;
 window.sanitizeText = sanitizeText;
 window.formatCoordinates = formatCoordinates;
 window.calculateDistance = calculateDistance;
-window.toggleSidebar = toggleSidebar;
-window.showSidebar = showSidebar;
-window.hideSidebar = hideSidebar;
