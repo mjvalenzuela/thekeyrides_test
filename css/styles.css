@@ -333,29 +333,28 @@ body {
 
 /* CONTROLES DE UBICACIÓN CORREGIDOS - Problema 4 */
 #location-controls {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1100; /* Mayor z-index que otros controles */
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  position: fixed;
+  top: 10px;               /* mismo top que el zoom */
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-#locate-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 8px;
-    box-shadow: var(--shadow-md);
-    border: 1px solid var(--border-light);
-    transition: all var(--transition-normal);
-    background: var(--btn-light);
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    order: -1; /* Forzar que esté arriba de otros controles */
+#locate-btn {  /* sin positioning extra */
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+  background: var(--btn-light);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
 #locate-btn:hover {
