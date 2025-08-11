@@ -70,17 +70,19 @@ function setupAutoUpdateListener() {
  * Validate configuration before initialization
  */
 function validateConfiguration() {
-    if (typeof MAP_TOKENS === 'undefined') {
-        throw new Error('MAP_TOKENS is not defined. Check that config/config.js is loading correctly.');
+    if (typeof MAP_TOKENS === 'undefined' || typeof MAP_CONFIG === 'undefined' || typeof SHEETS_CONFIG === 'undefined') {
+        throw new Error('MAP_TOKENS, MAP_CONFIG, or SHEETS_CONFIG is not defined. Check that config/config.js is loading correctly.');
     }
 
-    if (!MAP_TOKENS.mapbox || MAP_TOKENS.mapbox === 'your_real_token_here') {
+    if (!MAP_TOKENS.mapbox) {
         throw new Error('Mapbox token not configured. Edit config/config.js and add your real token.');
     }
 
     if (typeof mapboxgl === 'undefined') {
         throw new Error('Mapbox GL JS is not loaded correctly.');
     }
+    
+    console.log('Map configuration validated successfully');
 }
 
 /**
@@ -643,7 +645,7 @@ function updateClusterVisibility() {
 function showPointPopup(feature, lngLat) {
     const properties = feature.properties;
     const category = MAP_CONFIG.categories[properties.category];
-    const categoryName = category ? (category.name_en || category.name_es) : 'Unknown';
+    const categoryName = category ? category.name : 'Unknown'; // Only English name
 
     const popupContent = createPopupContent(properties, category, categoryName, lngLat);
 
@@ -661,8 +663,8 @@ function showPointPopup(feature, lngLat) {
  * Create popup content
  */
 function createPopupContent(properties, category, categoryName, lngLat) {
-    const title = properties.nombre_en || properties.nombre_es || 'Unnamed';
-    const description = properties.descripcion_en || properties.descripcion_es;
+    const title = properties.nombre_en || 'Unnamed'; // Only English name
+    const description = properties.descripcion_en; // Only English description
     const color = category ? category.color : '#000';
     
     return `

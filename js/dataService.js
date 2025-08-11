@@ -4,13 +4,35 @@
 
 class DataService {
     constructor() {
-        this.sheetsUrl = 'https://docs.google.com/spreadsheets/d/1Jr2BNf7HeG1wHmZ1nt-stelqGggq0i0wWeFykm4oKJ4';
-        this.csvUrl = `${this.sheetsUrl}/export?format=csv&gid=0`;
+        // Get configuration from global config - REQUIRED
+        if (typeof window.SHEETS_CONFIG === 'undefined') {
+            throw new Error('SHEETS_CONFIG is not defined. Make sure config/config.js is loaded.');
+        }
+        
+        const sheetsConfig = window.SHEETS_CONFIG;
+        
+        // Validate required configuration
+        if (!sheetsConfig.url) {
+            throw new Error('SHEETS_CONFIG.url is required but not provided.');
+        }
+        
+        this.sheetsUrl = sheetsConfig.url;
+        this.csvUrl = `${sheetsConfig.url}/export?format=csv&gid=${sheetsConfig.gid || 0}`;
         this.cache = null;
         this.lastFetch = null;
-        this.cacheTimeout = 2 * 60 * 1000; // Reducido a 2 minutos para mayor responsividad
+        this.cacheTimeout = sheetsConfig.cacheTimeout || 2 * 60 * 1000; // Default 2 minutes
         this.autoRefreshInterval = null;
-        this.setupAutoRefresh();
+        
+        // Setup auto-refresh if enabled
+        if (sheetsConfig.autoRefresh !== false) { // Default true unless explicitly false
+            this.setupAutoRefresh();
+        }
+        
+        console.log('DataService initialized with:', {
+            url: this.sheetsUrl,
+            cacheTimeout: this.cacheTimeout / 60000 + ' minutes',
+            autoRefresh: sheetsConfig.autoRefresh !== false
+        });
     }
 
     /**
@@ -40,7 +62,7 @@ class DataService {
             }
         }, this.cacheTimeout);
         
-        console.log('Auto-refresh setup: every 2 minutes');
+        console.log(`Auto-refresh setup: every ${this.cacheTimeout / 60000} minutes`);
     }
 
     /**
@@ -138,8 +160,29 @@ class DataService {
     convertToGeoJSON(data) {
         const features = [];
 
+        if (!data || !Array.isArray(data)) {
+            console.warn('Invalid data provided to convertToGeoJSON');
+            return {
+                type: 'FeatureCollection',
+                features: [],
+                metadata: {
+                    source: 'Google Sheets',
+                    url: this.sheetsUrl,
+                    loadTime: new Date().toISOString(),
+                    totalRows: 0,
+                    validPoints: 0,
+                    error: 'Invalid data structure'
+                }
+            };
+        }
+
         data.forEach((row, index) => {
             try {
+                // Skip empty rows
+                if (!row || Object.keys(row).length === 0) {
+                    return;
+                }
+
                 // Extract coordinates - adjust these field names based on your sheet structure
                 const lat = this.parseCoordinate(row['Latitude'] || row['lat'] || row['Lat']);
                 const lng = this.parseCoordinate(row['Longitude'] || row['lng'] || row['Lng'] || row['lon']);
@@ -165,13 +208,11 @@ class DataService {
                         id: row['ID'] || row['id'] || `point_${index + 1}`,
                         category: category,
                         
-                        // Names (adjust field names based on your sheet)
+                        // Names (English only)
                         nombre_en: row['Name'] || row['name'] || row['Name_EN'] || row['Title'] || `Point ${index + 1}`,
-                        nombre_es: row['Name_ES'] || row['nombre_es'] || row['Name'] || row['name'] || `Punto ${index + 1}`,
                         
-                        // Descriptions
+                        // Descriptions (English only) 
                         descripcion_en: row['Description'] || row['description'] || row['Description_EN'] || '',
-                        descripcion_es: row['Description_ES'] || row['descripcion_es'] || row['Description'] || row['description'] || '',
                         
                         // Additional properties
                         horario: row['Schedule'] || row['schedule'] || row['Hours'] || row['hours'] || '',
@@ -297,9 +338,7 @@ class DataService {
                         id: 'fallback_1',
                         category: 'office',
                         nombre_en: 'The Key Rides - Main Office (Fallback)',
-                        nombre_es: 'The Key Rides - Oficina Principal (Respaldo)',
                         descripcion_en: 'Fallback data - Main office location',
-                        descripcion_es: 'Datos de respaldo - Ubicación de oficina principal',
                         horario: '8:00 AM - 6:00 PM',
                         telefono: '+52 998 123 4567',
                         website: 'https://thekeyrides.com',
@@ -311,7 +350,8 @@ class DataService {
                 source: 'Fallback Data',
                 loadTime: new Date().toISOString(),
                 totalRows: 1,
-                validPoints: 1
+                validPoints: 1,
+                note: 'Using fallback data because Google Sheets could not be loaded'
             }
         };
     }
