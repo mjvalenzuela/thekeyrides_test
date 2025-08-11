@@ -142,7 +142,7 @@ function darkenColor(color, percent) {
     const B = (num & 0x0000FF) - amt;
     return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
         (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
-        (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+        (B > 255 ? 255 : B < 0 ? 0 : B) * 0x10000).toString(16).slice(1);
 }
 
 /**
@@ -879,15 +879,15 @@ function updateClusterVisibility() {
 }
 
 /**
- * Show point popup - CORREGIDO para mostrar nombre correcto
+ * Show point popup - CORREGIDO para usar campos exactos del sheet
  */
 function showPointPopup(feature, lngLat) {
     const properties = feature.properties;
     const category = MAP_CONFIG.categories[properties.category];
     const categoryName = category ? (category.name_en || category.name_es) : 'Unknown';
 
-    // CORREGIDO: usar los nombres reales del punto
-    const title = properties.nombre_en || properties.nombre_es || properties.name || 'Unnamed Point';
+    // CORREGIDO: usar 'name' que mapea a 'NamePOI' del sheet
+    const title = properties.name || 'Unnamed Point';
 
     const popupContent = createPopupContent(properties, category, categoryName, lngLat, title);
 
@@ -902,11 +902,23 @@ function showPointPopup(feature, lngLat) {
 }
 
 /**
- * Create popup content - CORREGIDO con título correcto
+ * Create popup content - CORREGIDO con mapeo exacto de campos
  */
 function createPopupContent(properties, category, categoryName, lngLat, title) {
-    const description = properties.descripcion_en || properties.descripcion_es || properties.description || '';
     const color = category ? category.color : '#000';
+    
+    // MAPEO CORRECTO de campos del sheet:
+    // - description mapea a 'Review'
+    // - address mapea a 'Address' 
+    // - schedule mapea a 'Schedule'
+    // - phone mapea a 'Phone'
+    // - website mapea a 'URLRedirect'
+    
+    const description = properties.description || '';
+    const address = properties.address || '';
+    const schedule = properties.schedule || '';
+    const phone = properties.phone || '';
+    const website = properties.website || '';
     
     return `
         <div class="popup-content">
@@ -916,9 +928,10 @@ function createPopupContent(properties, category, categoryName, lngLat, title) {
             </div>
             <div class="popup-body">
                 ${description ? `<p class="popup-description">${sanitizeText(description)}</p>` : ''}
-                ${properties.horario ? `<p class="popup-detail"><i class="bi bi-clock"></i> <strong>Schedule:</strong> ${sanitizeText(properties.horario)}</p>` : ''}
-                ${properties.telefono ? `<p class="popup-detail"><i class="bi bi-telephone"></i> <strong>Phone:</strong> ${sanitizeText(properties.telefono)}</p>` : ''}
-                ${properties.website ? `<p class="popup-website"><i class="bi bi-globe"></i> <a href="${sanitizeText(properties.website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
+                ${address ? `<p class="popup-detail"><i class="bi bi-geo-alt"></i> <strong>Address:</strong> ${sanitizeText(address)}</p>` : ''}
+                ${schedule ? `<p class="popup-detail"><i class="bi bi-clock"></i> <strong>Schedule:</strong> ${sanitizeText(schedule)}</p>` : ''}
+                ${phone ? `<p class="popup-detail"><i class="bi bi-telephone"></i> <strong>Phone:</strong> ${sanitizeText(phone)}</p>` : ''}
+                ${website ? `<p class="popup-website"><i class="bi bi-globe"></i> <a href="${sanitizeText(website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
             </div>
             <div class="popup-actions">
                 ${userLocation ? createRouteButton(lngLat) : ''}
@@ -1065,7 +1078,7 @@ function updateCategoryFiltersFromData(geoJsonData) {
 }
 
 /**
- * Create test data
+ * Create test data - ACTUALIZADO con estructura correcta de campos
  */
 function createTestData() {
     return {
@@ -1077,14 +1090,16 @@ function createTestData() {
                 properties: {
                     id: '1',
                     category: 'office',
-                    nombre_es: 'The Key Rides - Oficina Principal',
-                    nombre_en: 'The Key Rides - Main Office',
-                    descripcion_es: 'Oficina principal donde puedes hacer reservas y obtener información',
-                    descripcion_en: 'Main office where you can make reservations and get information',
-                    horario: '8:00 AM - 6:00 PM',
-                    telefono: '+52 998 123 4567',
+                    // CORREGIDO: usar 'name' que mapea a 'NamePOI'
+                    name: 'The Key Rides - Main Office',
+                    // CORREGIDO: usar 'description' que mapea a 'Review'
+                    description: 'Main office where you can make reservations and get information',
+                    // CORREGIDO: usar campos exactos del sheet
+                    address: 'Downtown Isla Mujeres, Mexico',
+                    schedule: '8:00 AM - 6:00 PM',
+                    phone: '+52 998 123 4567',
                     website: 'https://thekeyrides.com',
-                    activo: true
+                    active: true
                 }
             },
             {
@@ -1093,12 +1108,13 @@ function createTestData() {
                 properties: {
                     id: '2',
                     category: 'pickup',
-                    nombre_es: 'Estación Centro',
-                    nombre_en: 'Downtown Station',
-                    descripcion_es: 'Punto de recogida y entrega en el centro, cerca del ferry',
-                    descripcion_en: 'Pickup and drop-off point downtown, near the ferry',
-                    horario: '7:00 AM - 8:00 PM',
-                    activo: true
+                    name: 'Downtown Station',
+                    description: 'Pickup and drop-off point downtown, near the ferry',
+                    address: 'Near Ferry Terminal, Isla Mujeres',
+                    schedule: '7:00 AM - 8:00 PM',
+                    phone: '',
+                    website: '',
+                    active: true
                 }
             },
             {
@@ -1107,13 +1123,13 @@ function createTestData() {
                 properties: {
                     id: '3',
                     category: 'restaurant',
-                    nombre_es: 'Restaurante La Playa',
-                    nombre_en: 'La Playa Restaurant',
-                    descripcion_es: 'Deliciosa comida caribeña frente al mar con vista espectacular',
-                    descripcion_en: 'Delicious Caribbean food by the sea with spectacular view',
-                    horario: '12:00 PM - 10:00 PM',
-                    telefono: '+52 998 765 4321',
-                    activo: true
+                    name: 'La Playa Restaurant',
+                    description: 'Delicious Caribbean food by the sea with spectacular view',
+                    address: 'Beachfront, Isla Mujeres',
+                    schedule: '12:00 PM - 10:00 PM',
+                    phone: '+52 998 765 4321',
+                    website: 'https://laplayarestaurant.com',
+                    active: true
                 }
             },
             {
@@ -1122,12 +1138,13 @@ function createTestData() {
                 properties: {
                     id: '4',
                     category: 'tourist',
-                    nombre_es: 'Playa Norte',
-                    nombre_en: 'North Beach',
-                    descripcion_es: 'La playa más hermosa de Isla Mujeres, perfecta para relajarse',
-                    descripcion_en: 'The most beautiful beach in Isla Mujeres, perfect for relaxing',
-                    horario: '24 hours',
-                    activo: true
+                    name: 'North Beach',
+                    description: 'The most beautiful beach in Isla Mujeres, perfect for relaxing',
+                    address: 'North Beach, Isla Mujeres',
+                    schedule: '24 hours',
+                    phone: '',
+                    website: '',
+                    active: true
                 }
             },
             {
@@ -1136,13 +1153,13 @@ function createTestData() {
                 properties: {
                     id: '5',
                     category: 'shop',
-                    nombre_es: 'Tienda de Souvenirs Caribe',
-                    nombre_en: 'Caribbean Souvenirs Shop',
-                    descripcion_es: 'Los mejores recuerdos y artesanías locales de Isla Mujeres',
-                    descripcion_en: 'The best souvenirs and local crafts from Isla Mujeres',
-                    horario: '9:00 AM - 7:00 PM',
-                    telefono: '+52 998 555 1234',
-                    activo: true
+                    name: 'Caribbean Souvenirs Shop',
+                    description: 'The best souvenirs and local crafts from Isla Mujeres',
+                    address: 'Main Street, Isla Mujeres',
+                    schedule: '9:00 AM - 7:00 PM',
+                    phone: '+52 998 555 1234',
+                    website: '',
+                    active: true
                 }
             },
             {
@@ -1151,12 +1168,13 @@ function createTestData() {
                 properties: {
                     id: '6',
                     category: 'pickup',
-                    nombre_es: 'Estación Playa Sur',
-                    nombre_en: 'South Beach Station',
-                    descripcion_es: 'Punto de entrega cerca de las mejores playas del sur',
-                    descripcion_en: 'Drop-off point near the best southern beaches',
-                    horario: '8:00 AM - 6:00 PM',
-                    activo: true
+                    name: 'South Beach Station',
+                    description: 'Drop-off point near the best southern beaches',
+                    address: 'South Beach Area, Isla Mujeres',
+                    schedule: '8:00 AM - 6:00 PM',
+                    phone: '',
+                    website: '',
+                    active: true
                 }
             },
             {
@@ -1165,11 +1183,13 @@ function createTestData() {
                 properties: {
                     id: '7',
                     category: 'route',
-                    nombre_es: 'Ruta Turística Centro',
-                    nombre_en: 'Downtown Tourist Route',
-                    descripcion_es: 'Ruta recomendada para recorrer los principales atractivos del centro',
-                    descripcion_en: 'Recommended route to visit main downtown attractions',
-                    activo: true
+                    name: 'Downtown Tourist Route',
+                    description: 'Recommended route to visit main downtown attractions',
+                    address: 'Downtown Area, Isla Mujeres',
+                    schedule: '',
+                    phone: '',
+                    website: '',
+                    active: true
                 }
             }
         ]
