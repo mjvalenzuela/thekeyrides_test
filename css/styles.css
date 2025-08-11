@@ -1,0 +1,153 @@
+/* Reset y configuración base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+#map-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Mapa principal */
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Panel de controles superior */
+#controls-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.control-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group h6 {
+    color: #495057;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    align-self: center;
+}
+
+/* Leyenda */
+.legend-panel {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 280px;
+}
+
+.legend-panel h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Controles de geolocalización */
+#location-controls {
+    position: absolute;
+    top: 100px;
+    right: 15px;
+    z-index: 1000;
+}
+
+#locate-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+#locate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+#locate-btn.active {
+    background: #007cbf !important;
+    border-color: #007cbf;
+    color: white;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(8px);
+}
+
+.loading-overlay.hidden {
+    display: none;
+}
+
+/* Mapbox customizations */
+.mapboxgl-popup-content {
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    padding: 0;
+    max-width: 320px;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.mapboxgl-popup-close-button {
+    font-size: 22px;
+    color: #6c757d;
+    padding: 8px;
+}
+
+.mapboxgl-popup-close-button:hover {
+    color: #495057;
+}
+
+.mapboxgl-ctrl-group {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.mapboxgl-ctrl button {
+    border-radius: 6px;
+}
