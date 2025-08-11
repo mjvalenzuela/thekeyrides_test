@@ -236,7 +236,7 @@ class DataService {
                         category: category,
                         
                         // Names (from your sheet structure)
-                        nombre_en: row['NamePoi'] || row['Name'] || row['name'] || `Point ${index + 1}`,
+                        name: row['NamePOI'] || row['Name'] || row['name'] || `Point ${index + 1}`,
                         
                         // Descriptions
                         descripcion_en: row['Review'] || row['Description'] || row['description'] || '',

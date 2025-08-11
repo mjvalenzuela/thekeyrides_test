@@ -30,7 +30,7 @@ function initializeMap() {
         setupMapEvents();
         setupMapControls();
         setupAutoUpdateListener();
-        setupMobileDefaults(); // Nueva función para móvil
+        setupMobileDefaults();
 
     } catch (error) {
         console.error('Error initializing map:', error);
@@ -118,55 +118,219 @@ function handleMapLoad() {
 }
 
 /**
- * Load custom icons for categories - NUEVO
+ * Función para aclarar colores
+ */
+function lightenColor(color, percent) {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+        (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+        (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+}
+
+/**
+ * Función para oscurecer colores
+ */
+function darkenColor(color, percent) {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return "#" + (0x1000000 + (R > 255 ? 255 : R < 0 ? 0 : R) * 0x10000 +
+        (G > 255 ? 255 : G < 0 ? 0 : G) * 0x100 +
+        (B > 255 ? 255 : B < 0 ? 0 : B)).toString(16).slice(1);
+}
+
+/**
+ * Create enhanced SVG icon with better visibility and design
+ */
+function createSVGIcon(iconName, color, categoryKey) {
+    // Mapeo de iconos mejorados con SVG paths más detallados
+    const iconPaths = {
+        // Oficinas - edificio más detallado
+        'building': {
+            path: 'M3 2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2zm2 1v1h2V3H5zm4 0v1h2V3H9zm-4 3v1h2V6H5zm4 0v1h2V6H9zm-4 3v1h2V9H5zm4 0v1h2V9H9z',
+            size: 32,
+            shadow: true
+        },
+        
+        // Pickup/Drop-off - pin de ubicación más grande
+        'geo-alt': {
+            path: 'M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z',
+            size: 32,
+            shadow: true
+        },
+        
+        // Restaurantes - plato y cubiertos
+        'restaurant': {
+            path: 'M2.5 1a.5.5 0 0 0-.5.5v2a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 0-.5-.5h-3zM3 5a.5.5 0 0 0-.5.5V14a.5.5 0 0 0 1 0V5.5A.5.5 0 0 0 3 5zm7-4a.5.5 0 0 1 .5.5V3a.5.5 0 0 1-.5.5H9a.5.5 0 0 1-.5-.5V1.5a.5.5 0 0 1 .5-.5h1zm.5 4V14a.5.5 0 0 1-1 0V5h1z',
+            size: 32,
+            shadow: true
+        },
+        
+        // Tiendas - bolsa de compras
+        'shop': {
+            path: 'M5.5 3.5a2.5 2.5 0 1 1 5 0 M2 5h12l-1 7H3L2 5z M6 8v2m4-2v2',
+            size: 32,
+            shadow: true,
+            strokeWidth: 2
+        },
+        
+        // Turismo - cámara fotográfica
+        'camera': {
+            path: 'M2.5 3A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 13.5 3h-2.75a.5.5 0 0 1-.5-.5A1.5 1.5 0 0 0 8.75 1h-1.5A1.5 1.5 0 0 0 5.75 2.5a.5.5 0 0 1-.5.5H2.5z M8 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+            size: 32,
+            shadow: true
+        },
+        
+        // Rutas - flecha direccional
+        'route': {
+            path: 'M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 0 1H2.5v12h11a.5.5 0 0 1 0 1H2a.5.5 0 0 1-.5-.5V1.5z M8.354 4.146a.5.5 0 0 1 0 .708L6.707 6.5H14a.5.5 0 0 1 0 1H6.707l1.647 1.646a.5.5 0 0 1-.708.708l-2.5-2.5a.5.5 0 0 1 0-.708l2.5-2.5a.5.5 0 0 1 .708 0z',
+            size: 32,
+            shadow: true
+        }
+    };
+    
+    const iconConfig = iconPaths[iconName] || iconPaths['geo-alt'];
+    
+    // Crear gradiente más atractivo
+    const gradientId = `gradient-${categoryKey}`;
+    const lightColor = lightenColor(color, 30);
+    const darkColor = darkenColor(color, 20);
+    
+    return `<svg width="${iconConfig.size}" height="${iconConfig.size}" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <radialGradient id="${gradientId}" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" style="stop-color:${lightColor};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:${darkColor};stop-opacity:1" />
+            </radialGradient>
+            <filter id="shadow-${categoryKey}" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.4)"/>
+            </filter>
+        </defs>
+        
+        <!-- Sombra del círculo -->
+        <circle cx="8" cy="8" r="10" fill="rgba(0,0,0,0.2)" filter="url(#shadow-${categoryKey})"/>
+        
+        <!-- Círculo principal con gradiente -->
+        <circle cx="8" cy="8" r="8" fill="url(#${gradientId})" stroke="white" stroke-width="2"/>
+        
+        <!-- Icono -->
+        <path d="${iconConfig.path}" 
+              fill="white" 
+              stroke="${iconConfig.strokeWidth ? 'white' : 'none'}" 
+              stroke-width="${iconConfig.strokeWidth || 0}"
+              style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3))"/>
+    </svg>`;
+}
+
+/**
+ * Load enhanced map icons - MEJORADO
  */
 function loadMapIcons() {
     const iconPromises = [];
     
     Object.entries(MAP_CONFIG.categories).forEach(([categoryKey, category]) => {
-        if (category.icon && category.icon.includes('bi-')) {
-            // Crear icono SVG para Bootstrap Icons
-            const iconName = category.icon.replace('bi bi-', '');
-            const svg = createSVGIcon(iconName, category.color);
-            
-            const promise = new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    if (!map.hasImage(`icon-${categoryKey}`)) {
-                        map.addImage(`icon-${categoryKey}`, img);
-                    }
-                    resolve();
-                };
-                img.src = 'data:image/svg+xml;base64,' + btoa(svg);
-            });
-            
-            iconPromises.push(promise);
+        // Mapear iconos Bootstrap a nuestros iconos personalizados
+        let iconName = 'geo-alt'; // default
+        
+        if (category.icon) {
+            if (category.icon.includes('building')) iconName = 'building';
+            else if (category.icon.includes('geo')) iconName = 'geo-alt';
+            else if (category.icon.includes('shop')) iconName = 'shop';
+            else if (category.icon.includes('camera')) iconName = 'camera';
+            else if (category.icon.includes('cup') || category.icon.includes('restaurant')) iconName = 'restaurant';
+            else if (category.icon.includes('arrow') || category.icon.includes('route')) iconName = 'route';
         }
+        
+        const svg = createSVGIcon(iconName, category.color, categoryKey);
+        
+        const promise = new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                if (!map.hasImage(`icon-${categoryKey}`)) {
+                    map.addImage(`icon-${categoryKey}`, img);
+                }
+                resolve();
+            };
+            img.src = 'data:image/svg+xml;base64,' + btoa(svg);
+        });
+        
+        iconPromises.push(promise);
     });
     
     return Promise.all(iconPromises);
 }
 
 /**
- * Create SVG icon - NUEVO
+ * Create mini icon for legend - NUEVO
  */
-function createSVGIcon(iconName, color) {
-    // Mapeo de iconos Bootstrap a SVG paths
+function createMiniLegendIcon(iconName, color, categoryKey) {
     const iconPaths = {
-        'building': 'M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.495V14.5h4.5a.5.5 0 0 0 .5-.5V2a.5.5 0 0 0-.5-.5H1.5A.5.5 0 0 0 1 2v12a.5.5 0 0 0 .5.5h5zM3 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm6-6a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1zm0 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z',
-        'geo-alt': 'M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
-        'cup-hot': 'M.5 6a.5.5 0 0 0-.488.608l1.652 7.434A2.5 2.5 0 0 0 4.104 16h5.792a2.5 2.5 0 0 0 2.44-1.958l.131-.59a3 3 0 0 0 1.3-5.854l.221-.99A.5.5 0 0 0 13.5 6H.5zM13 12.5a2.01 2.01 0 0 1-.316-.025l.081-.36.063-.283a1 1 0 0 0-1.97-.347l-.483 2.183a1.5 1.5 0 0 1-1.464 1.179H4.104a1.5 1.5 0 0 1-1.464-1.179L1.124 8.5h11.26l-.045.201-.183.82c.292.15.54.37.729.631.15.2.286.434.386.699.014.039.028.078.042.118.093.282.154.583.154.898zM4.553 7.776c.82-1.641 1.717-2.753 2.093-3.13l.708.708c-.29.29-1.128 1.311-1.907 2.87l-.894-.448z',
-        'camera': 'M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
-        'shop': 'M2.97 1.35A1 1 0 0 1 3.73 1h8.54a1 1 0 0 1 .76.35l2.609 3.044A1.5 1.5 0 0 1 16 5.37v.255a2.375 2.375 0 0 1-4.25 1.458A2.371 2.371 0 0 1 9.875 8 2.37 2.37 0 0 1 8 7.083 2.37 2.37 0 0 1 6.125 8a2.37 2.37 0 0 1-1.875-.917A2.375 2.375 0 0 1 0 5.625V5.37a1.5 1.5 0 0 1 .361-.976l2.61-3.045zm1.78 4.275a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 1 0 2.75 0V5.37a.5.5 0 0 0-.12-.325L12.27 2H3.73L1.12 5.045A.5.5 0 0 0 1 5.37v.255a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0zM1.5 8.5A.5.5 0 0 1 2 9v6h1v-5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5h6V9a.5.5 0 0 1 1 0v6.5a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V9a.5.5 0 0 1 .5-.5zM4 15h3v-5H4v5z',
-        'arrow-right': 'M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z'
+        'building': 'M3 2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2zm2 1v1h2V3H5zm4 0v1h2V3H9zm-4 3v1h2V6H5zm4 0v1h2V6H9zm-4 3v1h2V9H5zm4 0v1h2V9H9z',
+        'geo-alt': 'M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z',
+        'restaurant': 'M2.5 1a.5.5 0 0 0-.5.5v2a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 0-.5-.5h-3zM3 5a.5.5 0 0 0-.5.5V14a.5.5 0 0 0 1 0V5.5A.5.5 0 0 0 3 5zm7-4a.5.5 0 0 1 .5.5V3a.5.5 0 0 1-.5.5H9a.5.5 0 0 1-.5-.5V1.5a.5.5 0 0 1 .5-.5h1zm.5 4V14a.5.5 0 0 1-1 0V5h1z',
+        'shop': 'M5.5 3.5a2.5 2.5 0 1 1 5 0 M2 5h12l-1 7H3L2 5z M6 8v2m4-2v2',
+        'camera': 'M2.5 3A1.5 1.5 0 0 0 1 4.5v7A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 13.5 3h-2.75a.5.5 0 0 1-.5-.5A1.5 1.5 0 0 0 8.75 1h-1.5A1.5 1.5 0 0 0 5.75 2.5a.5.5 0 0 1-.5.5H2.5z M8 9.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+        'route': 'M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 0 1H2.5v12h11a.5.5 0 0 1 0 1H2a.5.5 0 0 1-.5-.5V1.5z M8.354 4.146a.5.5 0 0 1 0 .708L6.707 6.5H14a.5.5 0 0 1 0 1H6.707l1.647 1.646a.5.5 0 0 1-.708.708l-2.5-2.5a.5.5 0 0 1 0-.708l2.5-2.5a.5.5 0 0 1 .708 0z'
     };
     
-    const path = iconPaths[iconName] || iconPaths['geo-alt']; // fallback
+    const path = iconPaths[iconName] || iconPaths['geo-alt'];
     
-    return `<svg width="24" height="24" viewBox="0 0 16 16" fill="${color}" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="8" cy="8" r="8" fill="white" stroke="${color}" stroke-width="2"/>
-        <path d="${path}" fill="${color}"/>
+    return `<svg width="20" height="20" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="8" cy="8" r="7" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <path d="${path}" fill="white" style="filter: drop-shadow(0.5px 0.5px 1px rgba(0,0,0,0.3))"/>
     </svg>`;
+}
+
+/**
+ * Generate enhanced legend with proper icons - NUEVO
+ */
+function generateEnhancedLegend() {
+    const container = document.getElementById('legend-items');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    Object.entries(MAP_CONFIG.categories).forEach(([categoryKey, category]) => {
+        const legendItem = createEnhancedLegendItem(categoryKey, category);
+        container.appendChild(legendItem);
+    });
+}
+
+/**
+ * Create enhanced legend item with mini icon - NUEVO
+ */
+function createEnhancedLegendItem(categoryKey, category) {
+    const name = category.name_en || category.name_es || 'Unnamed Category';
+    
+    // Crear mini versión del icono para la leyenda
+    let iconName = 'geo-alt';
+    if (category.icon) {
+        if (category.icon.includes('building')) iconName = 'building';
+        else if (category.icon.includes('geo')) iconName = 'geo-alt';
+        else if (category.icon.includes('shop')) iconName = 'shop';
+        else if (category.icon.includes('camera')) iconName = 'camera';
+        else if (category.icon.includes('cup') || category.icon.includes('restaurant')) iconName = 'restaurant';
+        else if (category.icon.includes('arrow') || category.icon.includes('route')) iconName = 'route';
+    }
+    
+    const miniIconSvg = createMiniLegendIcon(iconName, category.color, categoryKey);
+    
+    const legendItem = document.createElement('div');
+    legendItem.className = 'legend-item';
+    legendItem.innerHTML = `
+        <div class="legend-icon-container" data-category="${categoryKey}">
+            ${miniIconSvg}
+        </div>
+        <span>${name}</span>
+    `;
+    
+    return legendItem;
 }
 
 /**
@@ -500,7 +664,7 @@ function createMapSource() {
 }
 
 /**
- * Create clustering layers - MODIFICADO para iconos
+ * Enhanced layer creation with better icon visibility
  */
 function createClusterLayers() {
     // Cluster layer
@@ -520,11 +684,11 @@ function createClusterLayers() {
             'circle-radius': [
                 'step',
                 ['get', 'point_count'],
-                22,
-                5, 28,
-                10, 35
+                25,
+                5, 32,
+                10, 40
             ],
-            'circle-stroke-width': 4,
+            'circle-stroke-width': 3,
             'circle-stroke-color': '#ffffff',
             'circle-opacity': 0.9
         }
@@ -539,17 +703,17 @@ function createClusterLayers() {
         layout: {
             'text-field': '{point_count}',
             'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-            'text-size': 18,
+            'text-size': 16,
             'text-anchor': 'center'
         },
         paint: {
             'text-color': '#ffffff',
-            'text-halo-color': 'rgba(0,0,0,0.7)',
+            'text-halo-color': 'rgba(0,0,0,0.8)',
             'text-halo-width': 2
         }
     });
     
-    // Individual points layer with ICONS
+    // Individual points layer with ENHANCED ICONS
     map.addLayer({
         id: 'unclustered-point',
         type: 'symbol',
@@ -561,12 +725,14 @@ function createClusterLayers() {
                 'interpolate',
                 ['linear'],
                 ['zoom'],
-                10, 0.8,
-                15, 1.0,
-                18, 1.2
+                8, 0.6,
+                12, 0.8,
+                16, 1.0,
+                20, 1.4
             ],
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': false
+            'icon-allow-overlap': false,
+            'icon-ignore-placement': false,
+            'icon-anchor': 'center'
         }
     });
 }
@@ -811,6 +977,11 @@ async function loadMapData() {
             applyFilters();
             updateCategoryFiltersFromData(geoJsonData);
             
+            // Generate enhanced legend with icons
+            if (window.generateEnhancedLegend) {
+                window.generateEnhancedLegend();
+            }
+            
             // Show success message with metadata
             const metadata = geoJsonData.metadata || {};
             const message = `Loaded ${geoJsonData.features.length} points from ${metadata.source || 'data source'}`;
@@ -852,6 +1023,12 @@ function loadFallbackData() {
     
     setTimeout(() => {
         applyFilters();
+        
+        // Generate enhanced legend for fallback data too
+        if (window.generateEnhancedLegend) {
+            window.generateEnhancedLegend();
+        }
+        
         showToast('Using fallback data', 'info', 3000);
     }, 100);
 }
@@ -1162,6 +1339,10 @@ function validateFilters() {
 window.resetMap = resetMap;
 window.validateFilters = validateFilters;
 window.calculateRoute = calculateRoute;
+window.toggleCategoryFilter = toggleCategoryFilter;
+window.generateEnhancedLegend = generateEnhancedLegend;
+
+// Expose sidebar functions
 window.toggleSidebar = toggleSidebar;
 window.showSidebar = showSidebar;
 window.hideSidebar = hideSidebar;
