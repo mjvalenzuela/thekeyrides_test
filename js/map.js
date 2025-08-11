@@ -1,4 +1,4 @@
-// Variables globales del mapa
+// Global map variables
 let map;
 let userLocation = null;
 let activeFilters = new Set(Object.keys(MAP_CONFIG.categories));
@@ -6,16 +6,16 @@ let markersLayer = null;
 let clustersLayer = null;
 
 /**
- * Inicializar el mapa principal
+ * Initialize main map
  */
 function initializeMap() {
     try {
         validateConfiguration();
         
-        // Configurar token de acceso
+        // Set access token
         mapboxgl.accessToken = MAP_TOKENS.mapbox;
 
-        // Crear instancia del mapa
+        // Create map instance
         map = new mapboxgl.Map({
             container: 'map',
             style: MAP_CONFIG.style,
@@ -29,32 +29,62 @@ function initializeMap() {
 
         setupMapEvents();
         setupMapControls();
+        setupAutoUpdateListener();
 
     } catch (error) {
-        console.error('Error inicializando el mapa:', error);
-        showError(getText('error_load'));
+        console.error('Error initializing map:', error);
+        showToast(getText('error_load'), 'error');
     }
 }
 
 /**
- * Validar configuración antes de inicializar
+ * Setup listener for automatic data updates
+ */
+function setupAutoUpdateListener() {
+    document.addEventListener('dataUpdated', (event) => {
+        const { source, data } = event.detail;
+        
+        if (data && data.features && map.getSource('points')) {
+            console.log(`Updating map with ${data.features.length} points from ${source}`);
+            
+            // Update map silently
+            map.getSource('points').setData(data);
+            
+            // Update filters to show new categories if any
+            updateCategoryFiltersFromData(data);
+            
+            // Apply current filters
+            setTimeout(() => {
+                applyFilters();
+            }, 100);
+            
+            // Show subtle notification
+            if (source === 'auto-refresh') {
+                showToast(`Map updated: ${data.features.length} points`, 'success', 2000);
+            }
+        }
+    });
+}
+
+/**
+ * Validate configuration before initialization
  */
 function validateConfiguration() {
     if (typeof MAP_TOKENS === 'undefined') {
-        throw new Error('MAP_TOKENS no está definido. Verifica que config/config.js se esté cargando correctamente.');
+        throw new Error('MAP_TOKENS is not defined. Check that config/config.js is loading correctly.');
     }
 
-    if (!MAP_TOKENS.mapbox || MAP_TOKENS.mapbox === 'tu_token_real_aqui') {
-        throw new Error('Token de Mapbox no configurado. Edita config/config.js y agrega tu token real.');
+    if (!MAP_TOKENS.mapbox || MAP_TOKENS.mapbox === 'your_real_token_here') {
+        throw new Error('Mapbox token not configured. Edit config/config.js and add your real token.');
     }
 
     if (typeof mapboxgl === 'undefined') {
-        throw new Error('Mapbox GL JS no está cargado correctamente.');
+        throw new Error('Mapbox GL JS is not loaded correctly.');
     }
 }
 
 /**
- * Configurar eventos del mapa
+ * Setup map events
  */
 function setupMapEvents() {
     map.on('load', handleMapLoad);
@@ -64,7 +94,7 @@ function setupMapEvents() {
 }
 
 /**
- * Manejar evento de carga del mapa
+ * Handle map load event
  */
 function handleMapLoad() {
     setupClusterLayers();
@@ -74,15 +104,15 @@ function handleMapLoad() {
 }
 
 /**
- * Manejar errores del mapa
+ * Handle map errors
  */
 function handleMapError(e) {
-    console.error('Error del mapa:', e.error);
+    console.error('Map error:', e.error);
     showToast(getText('error_load'), 'error');
 }
 
 /**
- * Manejar cambios de zoom
+ * Handle zoom changes
  */
 function handleZoomEnd() {
     if (map.getLayer('clusters') && map.getLayer('cluster-count')) {
@@ -91,7 +121,7 @@ function handleZoomEnd() {
 }
 
 /**
- * Manejar clics en el mapa
+ * Handle map clicks
  */
 function handleMapClick(e) {
     if (!e.defaultPrevented) {
@@ -100,10 +130,10 @@ function handleMapClick(e) {
 }
 
 /**
- * Configurar controles del mapa
+ * Setup map controls
  */
 function setupMapControls() {
-    // Control de navegación
+    // Navigation control
     const navControl = new mapboxgl.NavigationControl({
         visualizePitch: true,
         showZoom: true,
@@ -111,10 +141,10 @@ function setupMapControls() {
     });
     map.addControl(navControl, 'top-right');
 
-    // Control de pantalla completa
+    // Fullscreen control
     map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
 
-    // Control de escala
+    // Scale control
     const scaleControl = new mapboxgl.ScaleControl({
         maxWidth: 100,
         unit: 'metric'
@@ -122,10 +152,11 @@ function setupMapControls() {
     map.addControl(scaleControl, 'bottom-right');
 
     setupGeolocationControl();
+    setupSearchControl();
 }
 
 /**
- * Configurar control de geolocalización personalizado
+ * Setup custom geolocation control
  */
 function setupGeolocationControl() {
     const locateBtn = document.getElementById('locate-btn');
@@ -135,13 +166,63 @@ function setupGeolocationControl() {
 }
 
 /**
- * Solicitar ubicación del usuario
+ * Setup search control
+ */
+function setupSearchControl() {
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    
+    if (searchInput && searchBtn) {
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+        
+        // Debounced search while typing
+        searchInput.addEventListener('input', debounce(handleLiveSearch, 300));
+    }
+}
+
+/**
+ * Handle search functionality
+ */
+function handleSearch() {
+    const searchInput = document.getElementById('search-input');
+    const query = searchInput?.value.trim();
+    
+    if (!query) {
+        showToast('Please enter a search term', 'info', 3000);
+        return;
+    }
+    
+    // Simple search implementation - can be enhanced with Mapbox Geocoding API
+    console.log('Searching for:', query);
+    showToast(`Searching for "${query}"...`, 'info', 2000);
+}
+
+/**
+ * Handle live search (while typing)
+ */
+function handleLiveSearch() {
+    const searchInput = document.getElementById('search-input');
+    const query = searchInput?.value.trim();
+    
+    if (query && query.length > 2) {
+        // Implement live search suggestions here
+        console.log('Live search:', query);
+    }
+}
+
+/**
+ * Request user location
  */
 function requestUserLocation() {
     const locateBtn = document.getElementById('locate-btn');
 
     if (!navigator.geolocation) {
-        showError('Geolocalización no soportada por este navegador');
+        showToast('Geolocation not supported by this browser', 'error');
         return;
     }
 
@@ -150,7 +231,7 @@ function requestUserLocation() {
     const locationOptions = {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000 // 5 minutos
+        maximumAge: 300000 // 5 minutes
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -161,7 +242,7 @@ function requestUserLocation() {
 }
 
 /**
- * Manejar éxito en obtención de ubicación
+ * Handle successful location retrieval
  */
 function handleLocationSuccess(position, locateBtn) {
     const coords = [position.coords.longitude, position.coords.latitude];
@@ -175,37 +256,38 @@ function handleLocationSuccess(position, locateBtn) {
 
     addUserLocationMarker(coords);
     setLocationButtonState(locateBtn, false);
+    showToast('Location found successfully', 'success', 2000);
 }
 
 /**
- * Manejar error en obtención de ubicación
+ * Handle location error
  */
 function handleLocationError(error, locateBtn) {
-    console.error('Error de geolocalización:', error);
-    showError(getText('error_location'));
+    console.error('Geolocation error:', error);
+    showToast(getText('error_location'), 'error');
     setLocationButtonState(locateBtn, false);
 }
 
 /**
- * Establecer estado del botón de ubicación
+ * Set location button state
  */
 function setLocationButtonState(button, isLoading) {
     if (isLoading) {
         button.classList.add('active');
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        button.innerHTML = '<i class="bi bi-arrow-repeat spinner-border spinner-border-sm"></i>';
     } else {
         button.classList.remove('active');
-        button.innerHTML = '<i class="fas fa-location-arrow"></i>';
+        button.innerHTML = '<i class="bi bi-geo-alt"></i>';
     }
 }
 
 /**
- * Agregar marcador de ubicación del usuario
+ * Add user location marker
  */
 function addUserLocationMarker(coords) {
     removeExistingUserLocation();
 
-    // Agregar nuevo marcador
+    // Add new marker
     map.addSource('user-location', {
         type: 'geojson',
         data: {
@@ -240,24 +322,23 @@ function addUserLocationMarker(coords) {
 }
 
 /**
- * Remover marcador de usuario existente
+ * Remove existing user location marker
  */
 function removeExistingUserLocation() {
     if (map.getSource('user-location')) {
         map.removeLayer('user-location-layer');
         map.removeSource('user-location');
     }
-}
-
-/**
- * Agregar animación de pulso para ubicación del usuario
- */
-function addUserLocationPulse(coords) {
     if (map.getSource('user-location-pulse')) {
         map.removeLayer('user-location-pulse-layer');
         map.removeSource('user-location-pulse');
     }
+}
 
+/**
+ * Add pulse animation for user location
+ */
+function addUserLocationPulse(coords) {
     map.addSource('user-location-pulse', {
         type: 'geojson',
         data: {
@@ -300,7 +381,7 @@ function addUserLocationPulse(coords) {
 }
 
 /**
- * Configurar capas de clustering
+ * Setup clustering layers
  */
 function setupClusterLayers() {
     try {
@@ -314,13 +395,13 @@ function setupClusterLayers() {
         createClusterLayers();
         
     } catch (error) {
-        console.error('Error configurando capas de clustering:', error);
-        showToast('Error configurando el mapa', 'error');
+        console.error('Error setting up clustering layers:', error);
+        showToast('Error setting up map', 'error');
     }
 }
 
 /**
- * Remover capas existentes
+ * Remove existing layers
  */
 function removeExistingLayers() {
     const layersToRemove = ['clusters', 'cluster-count', 'unclustered-point'];
@@ -337,7 +418,7 @@ function removeExistingLayers() {
 }
 
 /**
- * Crear fuente de datos del mapa
+ * Create map data source
  */
 function createMapSource() {
     map.addSource('points', {
@@ -353,10 +434,10 @@ function createMapSource() {
 }
 
 /**
- * Crear capas de clustering
+ * Create clustering layers
  */
 function createClusterLayers() {
-    // Capa de clusters
+    // Cluster layer
     map.addLayer({
         id: 'clusters',
         type: 'circle',
@@ -383,7 +464,7 @@ function createClusterLayers() {
         }
     });
     
-    // Números en clusters
+    // Cluster count layer
     map.addLayer({
         id: 'cluster-count',
         type: 'symbol',
@@ -402,7 +483,7 @@ function createClusterLayers() {
         }
     });
     
-    // Puntos individuales
+    // Individual points layer
     map.addLayer({
         id: 'unclustered-point',
         type: 'circle',
@@ -433,7 +514,7 @@ function createClusterLayers() {
 }
 
 /**
- * Generar expresión de color por categoría
+ * Generate color expression by category
  */
 function getCategoryColorExpression() {
     const colorExpression = ['case'];
@@ -445,12 +526,12 @@ function getCategoryColorExpression() {
         );
     });
     
-    colorExpression.push('#6c757d'); // Color por defecto
+    colorExpression.push('#6c757d'); // Default color
     return colorExpression;
 }
 
 /**
- * Configurar interacciones del mapa
+ * Setup map interactions
  */
 function setupMapInteractions() {
     try {
@@ -458,7 +539,7 @@ function setupMapInteractions() {
         const missingLayers = requiredLayers.filter(layerId => !map.getLayer(layerId));
         
         if (missingLayers.length > 0) {
-            console.warn('Capas faltantes para interacciones:', missingLayers);
+            console.warn('Missing layers for interactions:', missingLayers);
             return;
         }
         
@@ -466,12 +547,12 @@ function setupMapInteractions() {
         setupClickEvents();
         
     } catch (error) {
-        console.error('Error configurando interacciones:', error);
+        console.error('Error setting up interactions:', error);
     }
 }
 
 /**
- * Configurar efectos hover
+ * Setup hover effects
  */
 function setupHoverEffects() {
     const layers = ['clusters', 'unclustered-point'];
@@ -488,7 +569,7 @@ function setupHoverEffects() {
 }
 
 /**
- * Configurar eventos de clic
+ * Setup click events
  */
 function setupClickEvents() {
     map.on('click', 'clusters', handleClusterClick);
@@ -496,7 +577,7 @@ function setupClickEvents() {
 }
 
 /**
- * Manejar clic en cluster
+ * Handle cluster click
  */
 function handleClusterClick(e) {
     const features = map.queryRenderedFeatures(e.point, {
@@ -510,7 +591,7 @@ function handleClusterClick(e) {
             clusterId,
             (err, zoom) => {
                 if (err) {
-                    console.error('Error obteniendo zoom del cluster:', err);
+                    console.error('Error getting cluster zoom:', err);
                     return;
                 }
                 
@@ -527,7 +608,7 @@ function handleClusterClick(e) {
 }
 
 /**
- * Manejar clic en punto
+ * Handle point click
  */
 function handlePointClick(e) {
     if (e.features.length > 0) {
@@ -537,7 +618,7 @@ function handlePointClick(e) {
 }
 
 /**
- * Actualizar visibilidad de clusters basado en zoom
+ * Update cluster visibility based on zoom
  */
 function updateClusterVisibility() {
     try {
@@ -552,17 +633,17 @@ function updateClusterVisibility() {
         map.setLayoutProperty('cluster-count', 'visibility', visibility);
         
     } catch (error) {
-        console.error('Error actualizando visibilidad de clusters:', error);
+        console.error('Error updating cluster visibility:', error);
     }
 }
 
 /**
- * Mostrar popup de punto
+ * Show point popup
  */
 function showPointPopup(feature, lngLat) {
     const properties = feature.properties;
     const category = MAP_CONFIG.categories[properties.category];
-    const categoryName = category ? category[`name_${currentLanguage}`] || category.name_es : 'Desconocido';
+    const categoryName = category ? (category.name_en || category.name_es) : 'Unknown';
 
     const popupContent = createPopupContent(properties, category, categoryName, lngLat);
 
@@ -577,24 +658,24 @@ function showPointPopup(feature, lngLat) {
 }
 
 /**
- * Crear contenido del popup
+ * Create popup content
  */
 function createPopupContent(properties, category, categoryName, lngLat) {
-    const title = properties[`nombre_${currentLanguage}`] || properties.nombre_es || 'Sin nombre';
-    const description = properties[`descripcion_${currentLanguage}`] || properties.descripcion_es;
+    const title = properties.nombre_en || properties.nombre_es || 'Unnamed';
+    const description = properties.descripcion_en || properties.descripcion_es;
     const color = category ? category.color : '#000';
     
     return `
         <div class="popup-content">
             <div class="popup-header">
-                <h3>${title}</h3>
-                <span class="popup-category" style="color: ${color}">${categoryName}</span>
+                <h4>${sanitizeText(title)}</h4>
+                <span class="popup-category" style="background-color: ${color}">${sanitizeText(categoryName)}</span>
             </div>
             <div class="popup-body">
-                ${description ? `<p class="popup-description">${description}</p>` : ''}
-                ${properties.horario ? `<p class="popup-schedule"><strong>Horario:</strong> ${properties.horario}</p>` : ''}
-                ${properties.telefono ? `<p class="popup-phone"><strong>Teléfono:</strong> ${properties.telefono}</p>` : ''}
-                ${properties.website ? `<p class="popup-website"><a href="${properties.website}" target="_blank">Sitio web</a></p>` : ''}
+                ${description ? `<p class="popup-description">${sanitizeText(description)}</p>` : ''}
+                ${properties.horario ? `<p class="popup-detail"><i class="bi bi-clock"></i> <strong>Schedule:</strong> ${sanitizeText(properties.horario)}</p>` : ''}
+                ${properties.telefono ? `<p class="popup-detail"><i class="bi bi-telephone"></i> <strong>Phone:</strong> ${sanitizeText(properties.telefono)}</p>` : ''}
+                ${properties.website ? `<p class="popup-website"><i class="bi bi-globe"></i> <a href="${sanitizeText(properties.website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
             </div>
             <div class="popup-actions">
                 ${userLocation ? createRouteButton(lngLat) : ''}
@@ -604,18 +685,18 @@ function createPopupContent(properties, category, categoryName, lngLat) {
 }
 
 /**
- * Crear botón de ruta
+ * Create route button
  */
 function createRouteButton(lngLat) {
     return `
         <button onclick="calculateRoute([${lngLat.lng}, ${lngLat.lat}])" class="btn-route">
-            <i class="fas fa-directions"></i> ${getText('route_to')}
+            <i class="bi bi-signpost-2"></i> ${getText('route_to')}
         </button>
     `;
 }
 
 /**
- * Cerrar todos los popups
+ * Close all popups
  */
 function closeAllPopups() {
     const popups = document.getElementsByClassName('mapboxgl-popup');
@@ -623,29 +704,67 @@ function closeAllPopups() {
 }
 
 /**
- * Mostrar mensaje de error
+ * Load map data
  */
-function showError(message) {
-    console.error('Error:', message);
-    showToast(message, 'error', 5000);
+async function loadMapData() {
+    try {
+        toggleLoading(true);
+        
+        // Load data from Google Sheets using the data service
+        const geoJsonData = await window.dataService.loadData();
+        
+        if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
+            throw new Error('No valid data received from Google Sheets');
+        }
+        
+        // Update map with new data
+        map.getSource('points').setData(geoJsonData);
+        
+        // Reset active filters
+        activeFilters.clear();
+        Object.keys(MAP_CONFIG.categories).forEach(category => {
+            activeFilters.add(category);
+        });
+        
+        // Apply filters and update UI
+        setTimeout(() => {
+            applyFilters();
+            updateCategoryFiltersFromData(geoJsonData);
+            
+            // Show success message with metadata
+            const metadata = geoJsonData.metadata || {};
+            const message = `Loaded ${geoJsonData.features.length} points from ${metadata.source || 'data source'}`;
+            showToast(message, 'success', 4000);
+            
+            // Log metadata for debugging
+            console.log('Data loaded successfully:', {
+                features: geoJsonData.features.length,
+                metadata: metadata,
+                cacheInfo: window.dataService.getCacheInfo()
+            });
+            
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error loading map data:', error);
+        showToast('Error loading data from Google Sheets. Using fallback data.', 'error', 5000);
+        
+        // Load fallback data
+        loadFallbackData();
+    } finally {
+        toggleLoading(false);
+    }
 }
 
 /**
- * Cargar datos del mapa
+ * Load fallback data if Google Sheets fails
  */
-function loadMapData() {
-    loadTestData();
-}
-
-/**
- * Cargar datos de prueba
- */
-function loadTestData() {
-    const testData = createTestData();
+function loadFallbackData() {
+    const fallbackData = window.dataService.getFallbackData();
     
-    map.getSource('points').setData(testData);
+    map.getSource('points').setData(fallbackData);
     
-    // Resetear filtros activos
+    // Reset active filters
     activeFilters.clear();
     Object.keys(MAP_CONFIG.categories).forEach(category => {
         activeFilters.add(category);
@@ -653,12 +772,43 @@ function loadTestData() {
     
     setTimeout(() => {
         applyFilters();
-        showToast(`${testData.features.length} puntos cargados`, 'success', 3000);
+        showToast('Using fallback data', 'info', 3000);
     }, 100);
 }
 
 /**
- * Crear datos de prueba
+ * Update category filters based on actual data
+ */
+function updateCategoryFiltersFromData(geoJsonData) {
+    // Get unique categories from the data
+    const categoriesInData = new Set();
+    geoJsonData.features.forEach(feature => {
+        if (feature.properties.category) {
+            categoriesInData.add(feature.properties.category);
+        }
+    });
+    
+    // Update filter UI to show/hide categories based on available data
+    Object.keys(MAP_CONFIG.categories).forEach(categoryKey => {
+        const filterElement = document.querySelector(`#filter-${categoryKey}`);
+        const container = filterElement?.closest('.filter-checkbox');
+        
+        if (container) {
+            if (categoriesInData.has(categoryKey)) {
+                container.style.display = 'flex';
+                container.style.opacity = '1';
+            } else {
+                container.style.opacity = '0.5';
+                container.title = 'No data available for this category';
+            }
+        }
+    });
+    
+    console.log('Categories found in data:', Array.from(categoriesInData));
+}
+
+/**
+ * Create test data
  */
 function createTestData() {
     return {
@@ -719,7 +869,7 @@ function createTestData() {
                     nombre_en: 'North Beach',
                     descripcion_es: 'La playa más hermosa de Isla Mujeres, perfecta para relajarse',
                     descripcion_en: 'The most beautiful beach in Isla Mujeres, perfect for relaxing',
-                    horario: '24 horas',
+                    horario: '24 hours',
                     activo: true
                 }
             },
@@ -770,15 +920,24 @@ function createTestData() {
 }
 
 /**
- * Función placeholder para calcular rutas
+ * Calculate route to destination
  */
 function calculateRoute(destination) {
-    console.log('Calculando ruta hacia:', destination);
-    // Por implementar
+    if (!userLocation) {
+        showToast('Please enable location first', 'info', 3000);
+        requestUserLocation();
+        return;
+    }
+    
+    console.log('Calculating route to:', destination);
+    showToast('Route calculation feature coming soon!', 'info', 3000);
+    
+    // Here you can implement route calculation using Mapbox Directions API
+    // or integrate with Google Maps/Apple Maps
 }
 
 /**
- * Toggle de filtros de categorías
+ * Toggle category filter
  */
 function toggleCategoryFilter(category, enabled) {
     try {
@@ -795,13 +954,13 @@ function toggleCategoryFilter(category, enabled) {
         updateFilterUI(category, enabled);
         
     } catch (error) {
-        console.error('Error en toggleCategoryFilter:', error);
-        showToast('Error cambiando filtro', 'error');
+        console.error('Error in toggleCategoryFilter:', error);
+        showToast('Error changing filter', 'error');
     }
 }
 
 /**
- * Actualizar UI de filtros
+ * Update filter UI
  */
 function updateFilterUI(category, enabled) {
     const filterElement = document.querySelector(`#filter-${category}`);
@@ -814,12 +973,12 @@ function updateFilterUI(category, enabled) {
 }
 
 /**
- * Aplicar filtros
+ * Apply filters
  */
 function applyFilters() {
     try {
         if (!map.getLayer('unclustered-point') || !map.getSource('points')) {
-            console.warn('Capas no disponibles para filtros');
+            console.warn('Layers not available for filters');
             return;
         }
         
@@ -839,13 +998,13 @@ function applyFilters() {
         map.setFilter('unclustered-point', filter);
         
     } catch (error) {
-        console.error('Error aplicando filtros:', error);
-        showToast('Error aplicando filtros', 'error');
+        console.error('Error applying filters:', error);
+        showToast('Error applying filters', 'error');
     }
 }
 
 /**
- * Crear expresión de filtro
+ * Create filter expression
  */
 function createFilterExpression() {
     const categoryConditions = Array.from(activeFilters).map(category => 
@@ -868,7 +1027,15 @@ function createFilterExpression() {
 }
 
 /**
- * Función de debugging para reiniciar el mapa
+ * Add refresh data functionality
+ */
+function refreshMapData() {
+    showToast('Refreshing data...', 'info', 2000);
+    loadMapData();
+}
+
+/**
+ * Debug function to reset map
  */
 function resetMap() {
     try {
@@ -877,19 +1044,19 @@ function resetMap() {
         setTimeout(() => {
             setupClusterLayers();
             setTimeout(() => {
-                loadTestData();
-                showToast('Mapa reiniciado', 'success', 2000);
+                loadMapData(); // Now loads from Google Sheets
+                showToast('Map reset', 'success', 2000);
             }, 100);
         }, 100);
         
     } catch (error) {
-        console.error('Error reiniciando mapa:', error);
-        showToast('Error reiniciando mapa', 'error');
+        console.error('Error resetting map:', error);
+        showToast('Error resetting map', 'error');
     }
 }
 
 /**
- * Función para validar estado de filtros
+ * Validate filter state
  */
 function validateFilters() {
     const inconsistencies = [];
@@ -911,11 +1078,15 @@ function validateFilters() {
     };
 }
 
-// Exponer funciones globalmente
+// Expose functions globally
 window.resetMap = resetMap;
 window.validateFilters = validateFilters;
+window.calculateRoute = calculateRoute;
+window.toggleSidebar = toggleSidebar;
+window.showSidebar = showSidebar;
+window.hideSidebar = hideSidebar;
 
-// Inicializar cuando el DOM esté listo
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => {
         initializeMap();

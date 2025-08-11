@@ -12,28 +12,32 @@
     gap: 8px;
     font-size: 13px;
     cursor: pointer;
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 8px;
-    background: rgba(248, 249, 250, 0.8);
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
+    background: var(--filter-bg);
+    border: 1px solid var(--border-light);
+    transition: all var(--transition-fast);
     user-select: none;
+    color: var(--text-secondary);
 }
 
 .filter-checkbox:hover {
-    background: rgba(233, 236, 239, 0.9);
+    background: var(--filter-bg-hover);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-primary);
 }
 
 .filter-checkbox.active {
-    background: rgba(0, 123, 191, 0.1);
-    border-color: rgba(0, 123, 191, 0.3);
+    background: var(--filter-active-bg);
+    border-color: var(--filter-active-border);
+    color: var(--btn-primary);
 }
 
 .filter-checkbox input[type="checkbox"] {
     margin: 0;
     transform: scale(1.1);
+    accent-color: var(--btn-primary);
 }
 
 .category-icon {
@@ -46,8 +50,8 @@
     height: 12px;
     border-radius: 50%;
     display: inline-block;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 2px solid var(--text-light);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Items de leyenda */
@@ -57,11 +61,16 @@
     gap: 12px;
     margin-bottom: 8px;
     font-size: 13px;
-    color: #495057;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
 }
 
 .legend-item:last-child {
     margin-bottom: 0;
+}
+
+.legend-item:hover {
+    color: var(--text-primary);
 }
 
 .legend-icon {
@@ -72,13 +81,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    border: 2px solid var(--text-light);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+}
+
+.legend-item:hover .legend-icon {
+    transform: scale(1.05);
 }
 
 .legend-icon i {
     font-size: 10px;
-    color: white;
+    color: var(--text-light);
     text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
@@ -86,20 +100,21 @@
 .popup-content {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.5;
+    color: var(--text-primary);
 }
 
 .popup-header {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: var(--menu-header-bg);
     padding: 16px 20px;
     border-radius: 12px 12px 0 0;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid var(--border-light);
 }
 
 .popup-header h4 {
     margin: 0 0 4px 0;
     font-size: 16px;
     font-weight: 600;
-    color: #212529;
+    color: var(--text-primary);
 }
 
 .popup-category {
@@ -112,21 +127,23 @@
     letter-spacing: 0.5px;
     padding: 4px 8px;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--bg-overlay-dark);
+    color: var(--text-light);
 }
 
 .popup-body {
     padding: 16px 20px;
+    background: var(--bg-primary);
 }
 
 .popup-body p {
     margin: 8px 0;
     font-size: 14px;
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .popup-description {
-    color: #6c757d;
+    color: var(--text-muted);
     line-height: 1.4;
 }
 
@@ -135,52 +152,56 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #495057;
+    color: var(--text-secondary);
     margin: 6px 0;
 }
 
 .popup-detail i {
     width: 16px;
     text-align: center;
-    color: #6c757d;
+    color: var(--text-muted);
 }
 
 .popup-website a {
-    color: #007cbf;
+    color: var(--btn-primary);
     text-decoration: none;
     font-weight: 500;
 }
 
 .popup-website a:hover {
     text-decoration: underline;
-    color: #0056b3;
+    color: var(--btn-primary-hover);
 }
 
 .popup-actions {
     padding: 12px 20px;
-    background: #f8f9fa;
+    background: var(--bg-secondary);
     border-radius: 0 0 12px 12px;
-    border-top: 1px solid rgba(0,0,0,0.05);
+    border-top: 1px solid var(--border-light);
 }
 
 .btn-route {
     width: 100%;
-    background: linear-gradient(135deg, #007cbf 0%, #0056b3 100%);
+    background: linear-gradient(135deg, var(--btn-primary) 0%, var(--btn-primary-hover) 100%);
     border: none;
     padding: 10px 16px;
     border-radius: 8px;
-    color: white;
+    color: var(--text-light);
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all var(--transition-normal);
     box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn-route:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 123, 191, 0.4);
-    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
+    background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #004494 100%);
 }
 
 .btn-route:active {
@@ -192,8 +213,8 @@
     position: fixed;
     top: 20px;
     right: 20px;
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    color: white;
+    background: var(--toast-error-bg);
+    color: var(--text-light);
     padding: 16px 20px;
     border-radius: 8px;
     z-index: 10000;
@@ -205,16 +226,14 @@
 }
 
 .success-toast {
-    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    background: var(--toast-success-bg);
     box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
 }
 
 .info-toast {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    background: var(--toast-info-bg);
     box-shadow: 0 4px 20px rgba(23, 162, 184, 0.3);
 }
-
-/* Mejoras visuales para puntos sin íconos */
 
 /* Animaciones para los puntos del mapa */
 @keyframes pulse-pickup {
@@ -229,46 +248,46 @@
     100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
 }
 
-/* Mejorar leyenda con patrones distintivos */
-.legend-icon {
-    position: relative;
-}
-
-.legend-icon::after {
+/* Patrones distintivos por categoría */
+.legend-icon[data-category="office"]::after {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.9);
-}
-
-/* Patrones distintivos por categoría */
-.legend-icon[data-category="office"]::after {
     width: 4px;
     height: 4px;
     border-radius: 2px;
+    background: var(--text-light);
 }
 
 .legend-icon[data-category="route"]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 8px;
     height: 2px;
     border-radius: 1px;
+    background: var(--text-light);
 }
 
 .legend-icon[data-category="restricted"]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 0;
     height: 0;
     border-left: 3px solid transparent;
     border-right: 3px solid transparent;
-    border-bottom: 4px solid rgba(255, 255, 255, 0.9);
+    border-bottom: 4px solid var(--text-light);
     border-radius: 0;
 }
 
-/* Tooltips mejorados */
+/* Tooltips */
 .filter-checkbox {
     position: relative;
 }
@@ -279,18 +298,52 @@
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
+    background: var(--bg-overlay-dark);
+    color: var(--text-light);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 11px;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity var(--transition-normal);
     margin-bottom: 5px;
+    z-index: 1000;
 }
 
 .filter-checkbox:hover::after {
     opacity: 1;
+}
+
+/* Animaciones de entrada/salida */
+@keyframes slideIn {
+    from { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+    to { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+}
+
+@keyframes slideOut {
+    from { 
+        transform: translateX(0); 
+        opacity: 1; 
+    }
+    to { 
+        transform: translateX(100%); 
+        opacity: 0; 
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }

@@ -1,90 +1,24 @@
-// Configuración de idiomas
-const i18n = {
-    es: {
-        filters: 'Filtros',
-        legend: 'Leyenda', 
-        loading: 'Cargando mapa...',
-        search_placeholder: 'Buscar lugar...',
-        my_location: 'Mi ubicación',
-        route_to: 'Cómo llegar',
-        error_location: 'No se pudo obtener tu ubicación',
-        error_load: 'Error al cargar los datos del mapa',
-        schedule: 'Horario',
-        phone: 'Teléfono',
-        website: 'Sitio web'
-    },
-    en: {
-        filters: 'Filters',
-        legend: 'Legend',
-        loading: 'Loading map...',
-        search_placeholder: 'Search place...',
-        my_location: 'My location',
-        route_to: 'Get directions',
-        error_location: 'Could not get your location',
-        error_load: 'Error loading map data',
-        schedule: 'Schedule',
-        phone: 'Phone',
-        website: 'Website'
-    }
+// Text constants in English
+const TEXTS = {
+    filters: 'Filters',
+    legend: 'Legend', 
+    loading: 'Loading map...',
+    search_placeholder: 'Search for a place...',
+    my_location: 'My location',
+    route_to: 'Get directions',
+    error_location: 'Could not get your location',
+    error_load: 'Error loading map data',
+    schedule: 'Schedule',
+    phone: 'Phone',
+    website: 'Website',
+    map_controls: 'Map Controls',
+    search: 'Search'
 };
 
-let currentLanguage = 'es';
-
 /**
- * Cambiar idioma de la interfaz
+ * Generate category filters
  */
-function changeLanguage(lang) {
-    if (!i18n[lang]) {
-        console.warn(`Idioma ${lang} no disponible, usando español por defecto`);
-        lang = 'es';
-    }
-    
-    currentLanguage = lang;
-    updateTextElements(lang);
-    updatePlaceholderElements(lang);
-    updateDynamicTexts(lang);
-}
-
-/**
- * Actualizar elementos con atributo data-i18n
- */
-function updateTextElements(lang) {
-    document.querySelectorAll('[data-i18n]').forEach(element => {
-        const key = element.getAttribute('data-i18n');
-        const text = i18n[lang]?.[key];
-        
-        if (text) {
-            element.textContent = text;
-        }
-    });
-}
-
-/**
- * Actualizar placeholders con atributo data-i18n-placeholder
- */
-function updatePlaceholderElements(lang) {
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
-        const key = element.getAttribute('data-i18n-placeholder');
-        const placeholder = i18n[lang]?.[key];
-        
-        if (placeholder) {
-            element.placeholder = placeholder;
-        }
-    });
-}
-
-/**
- * Actualizar textos dinámicos
- */
-function updateDynamicTexts(lang) {
-    updateCategoryFilters();
-    updateLegend();
-}
-
-/**
- * Generar filtros de categorías
- */
-function updateCategoryFilters() {
+function generateCategoryFilters() {
     const container = document.querySelector('.filters-container');
     if (!container) return;
     
@@ -97,10 +31,10 @@ function updateCategoryFilters() {
 }
 
 /**
- * Crear elemento de filtro individual
+ * Create individual filter element
  */
 function createFilterElement(categoryKey, category) {
-    const name = category[`name_${currentLanguage}`] || category.name_es;
+    const name = category.name_en || category.name_es;
     
     const filterDiv = document.createElement('div');
     filterDiv.className = 'filter-checkbox form-check-label active';
@@ -119,7 +53,7 @@ function createFilterElement(categoryKey, category) {
 }
 
 /**
- * Crear manejador de cambio de filtro
+ * Create filter change handler
  */
 function createFilterChangeHandler(categoryKey, filterDiv) {
     return function(e) {
@@ -129,25 +63,25 @@ function createFilterChangeHandler(categoryKey, filterDiv) {
             
             const isChecked = e.target.checked;
             
-            // Actualizar UI inmediatamente
+            // Update UI immediately
             filterDiv.classList.toggle('active', isChecked);
             
-            // Actualizar filtros
+            // Update filters
             toggleCategoryFilter(categoryKey, isChecked);
             
         } catch (error) {
-            console.error('Error en filtro:', error);
-            // Revertir el checkbox si hay error
+            console.error('Filter error:', error);
+            // Revert checkbox if error
             e.target.checked = !e.target.checked;
-            showToast('Error aplicando filtro', 'error');
+            showToast('Error applying filter', 'error');
         }
     };
 }
 
 /**
- * Generar leyenda
+ * Generate legend
  */
-function updateLegend() {
+function generateLegend() {
     const container = document.getElementById('legend-items');
     if (!container) return;
     
@@ -160,10 +94,10 @@ function updateLegend() {
 }
 
 /**
- * Crear elemento de leyenda individual
+ * Create individual legend item
  */
 function createLegendItem(categoryKey, category) {
-    const name = category[`name_${currentLanguage}`] || category.name_es;
+    const name = category.name_en || category.name_es;
     
     const legendItem = document.createElement('div');
     legendItem.className = 'legend-item';
@@ -179,14 +113,14 @@ function createLegendItem(categoryKey, category) {
 }
 
 /**
- * Obtener texto traducido
+ * Get text
  */
 function getText(key) {
-    return i18n[currentLanguage]?.[key] || key;
+    return TEXTS[key] || key;
 }
 
 /**
- * Mostrar toast de notificación
+ * Show toast notification
  */
 function showToast(message, type = 'error', duration = 5000) {
     if (!message) return;
@@ -194,19 +128,19 @@ function showToast(message, type = 'error', duration = 5000) {
     const toast = createToastElement(message, type);
     document.body.appendChild(toast);
     
-    // Animación de entrada
+    // Entry animation
     requestAnimationFrame(() => {
         toast.style.animation = 'slideIn 0.3s ease';
     });
     
-    // Programar eliminación
+    // Schedule removal
     setTimeout(() => {
         removeToast(toast);
     }, duration);
 }
 
 /**
- * Crear elemento toast
+ * Create toast element
  */
 function createToastElement(message, type) {
     const toast = document.createElement('div');
@@ -227,14 +161,14 @@ function createToastElement(message, type) {
         border: 1px solid rgba(255, 255, 255, 0.2);
     `;
     
-    // Aplicar colores según el tipo
+    // Apply colors based on type
     applyToastColors(toast, type);
     
     return toast;
 }
 
 /**
- * Aplicar colores al toast según su tipo
+ * Apply toast colors based on type
  */
 function applyToastColors(toast, type) {
     const colors = {
@@ -247,7 +181,7 @@ function applyToastColors(toast, type) {
 }
 
 /**
- * Remover toast con animación
+ * Remove toast with animation
  */
 function removeToast(toast) {
     if (!document.body.contains(toast)) return;
@@ -262,7 +196,7 @@ function removeToast(toast) {
 }
 
 /**
- * Alternar indicador de carga
+ * Toggle loading indicator
  */
 function toggleLoading(show = true) {
     const loading = document.getElementById('loading');
@@ -272,19 +206,19 @@ function toggleLoading(show = true) {
 }
 
 /**
- * Verificar si está en iframe embebido
+ * Check if embedded in iframe
  */
 function isEmbedded() {
     try {
         return window.self !== window.top;
     } catch (e) {
-        // En caso de error de seguridad, asumir que está embebido
+        // In case of security error, assume embedded
         return true;
     }
 }
 
 /**
- * Aplicar estilos para modo embebido
+ * Apply embedded styles
  */
 function applyEmbeddedStyles() {
     if (isEmbedded()) {
@@ -293,39 +227,137 @@ function applyEmbeddedStyles() {
 }
 
 /**
- * Configurar selector de idioma
+ * Setup sidebar functionality with enhanced controls
  */
-function setupLanguageSelector() {
-    const languageSelector = document.getElementById('language-selector');
-    if (!languageSelector) return;
+function setupSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarToggleExternal = document.getElementById('sidebar-toggle-external');
+    const toggleIcon = sidebarToggle?.querySelector('i');
     
-    languageSelector.addEventListener('change', (e) => {
-        changeLanguage(e.target.value);
+    if (!sidebar || !sidebarToggle) return;
+    
+    // Internal toggle button
+    sidebarToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleSidebar();
     });
     
-    // Establecer idioma inicial
-    languageSelector.value = currentLanguage;
+    // External toggle button
+    if (sidebarToggleExternal) {
+        sidebarToggleExternal.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSidebar();
+        });
+    }
+    
+    // Keyboard shortcut (ESC to close, CTRL+M to toggle)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !sidebar.classList.contains('collapsed')) {
+            hideSidebar();
+        }
+        if (e.ctrlKey && e.key === 'm') {
+            e.preventDefault();
+            toggleSidebar();
+        }
+    });
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+        if (window.innerWidth <= 768) { // Mobile breakpoint
+            const isClickInsideSidebar = sidebar.contains(e.target);
+            const isToggleButton = sidebarToggleExternal.contains(e.target);
+            
+            if (!isClickInsideSidebar && !isToggleButton && !sidebar.classList.contains('collapsed')) {
+                hideSidebar();
+            }
+        }
+    });
 }
 
 /**
- * Inicialización de utilidades
+ * Toggle sidebar visibility
  */
-function initializeUtils() {
-    applyEmbeddedStyles();
-    setupLanguageSelector();
-    changeLanguage(currentLanguage);
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('collapsed')) {
+        showSidebar();
+    } else {
+        hideSidebar();
+    }
 }
 
 /**
- * Validar existencia de configuración requerida
+ * Show sidebar
+ */
+function showSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleIcon = document.querySelector('#sidebar-toggle i');
+    
+    sidebar.classList.remove('collapsed');
+    
+    if (toggleIcon) {
+        toggleIcon.className = 'bi bi-chevron-left';
+    }
+    
+    // Store preference
+    localStorage.setItem('sidebarCollapsed', 'false');
+    
+    // Trigger resize event for map
+    setTimeout(() => {
+        if (window.map && window.map.resize) {
+            window.map.resize();
+        }
+    }, 300);
+}
+
+/**
+ * Hide sidebar
+ */
+function hideSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleIcon = document.querySelector('#sidebar-toggle i');
+    
+    sidebar.classList.add('collapsed');
+    
+    if (toggleIcon) {
+        toggleIcon.className = 'bi bi-chevron-right';
+    }
+    
+    // Store preference
+    localStorage.setItem('sidebarCollapsed', 'true');
+    
+    // Trigger resize event for map
+    setTimeout(() => {
+        if (window.map && window.map.resize) {
+            window.map.resize();
+        }
+    }, 300);
+}
+
+/**
+ * Restore sidebar state from localStorage
+ */
+function restoreSidebarState() {
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (isCollapsed) {
+        hideSidebar();
+    } else {
+        showSidebar();
+    }
+}
+
+/**
+ * Validate required configuration
  */
 function validateRequiredConfig() {
     const requiredObjects = ['MAP_CONFIG', 'MAP_TOKENS'];
     const missing = requiredObjects.filter(obj => typeof window[obj] === 'undefined');
     
     if (missing.length > 0) {
-        console.error('Objetos de configuración faltantes:', missing);
-        showToast('Error de configuración del mapa', 'error');
+        console.error('Missing configuration objects:', missing);
+        showToast('Map configuration error', 'error');
         return false;
     }
     
@@ -333,7 +365,18 @@ function validateRequiredConfig() {
 }
 
 /**
- * Debounce para limitar frecuencia de ejecución de funciones
+ * Initialize utilities
+ */
+function initializeUtils() {
+    applyEmbeddedStyles();
+    setupSidebar();
+    restoreSidebarState(); // Restore saved state
+    generateCategoryFilters();
+    generateLegend();
+}
+
+/**
+ * Debounce function to limit execution frequency
  */
 function debounce(func, wait) {
     let timeout;
@@ -348,7 +391,7 @@ function debounce(func, wait) {
 }
 
 /**
- * Throttle para limitar ejecución de funciones
+ * Throttle function to limit execution
  */
 function throttle(func, limit) {
     let inThrottle;
@@ -362,7 +405,7 @@ function throttle(func, limit) {
 }
 
 /**
- * Sanitizar texto para prevenir XSS
+ * Sanitize text to prevent XSS
  */
 function sanitizeText(text) {
     if (typeof text !== 'string') return '';
@@ -373,21 +416,21 @@ function sanitizeText(text) {
 }
 
 /**
- * Formatear coordenadas para display
+ * Format coordinates for display
  */
 function formatCoordinates(lng, lat, precision = 4) {
     if (typeof lng !== 'number' || typeof lat !== 'number') {
-        return 'Coordenadas inválidas';
+        return 'Invalid coordinates';
     }
     
     return `${lat.toFixed(precision)}, ${lng.toFixed(precision)}`;
 }
 
 /**
- * Calcular distancia entre dos puntos (Haversine)
+ * Calculate distance between two points (Haversine)
  */
 function calculateDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371; // Radio de la Tierra en km
+    const R = 6371; // Earth radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
     
@@ -396,32 +439,25 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
               Math.sin(dLng/2) * Math.sin(dLng/2);
     
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c; // Distancia en km
+    return R * c; // Distance in km
 }
 
 /**
- * Verificar si un punto está dentro de un bounding box
+ * Check if point is within bounds
  */
 function isPointInBounds(lng, lat, bounds) {
     return lng >= bounds.west && lng <= bounds.east &&
            lat >= bounds.south && lat <= bounds.north;
 }
 
-/**
- * Generar ID único
- */
-function generateUniqueId(prefix = 'id') {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// Inicializar cuando el DOM esté listo
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     if (validateRequiredConfig()) {
         initializeUtils();
     }
 });
 
-// Exponer funciones útiles globalmente
+// Expose useful functions globally
 window.getText = getText;
 window.showToast = showToast;
 window.toggleLoading = toggleLoading;

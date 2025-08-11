@@ -1,3 +1,80 @@
+/* CSS Variables for Colors */
+:root {
+  /* Text Colors */
+  --text-primary: #212529;
+  --text-secondary: #495057;
+  --text-muted: #6c757d;
+  --text-light: #ffffff;
+  --text-error: #dc3545;
+  --text-success: #28a745;
+  --text-info: #17a2b8;
+  
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-dark: #343a40;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+  --bg-overlay-dark: rgba(0, 0, 0, 0.8);
+  --bg-sidebar: #f8f9fa;
+  --bg-sidebar-collapsed: rgba(248, 249, 250, 0.98);
+  
+  /* Button Colors */
+  --btn-primary: #007cbf;
+  --btn-primary-hover: #0056b3;
+  --btn-secondary: #6c757d;
+  --btn-secondary-hover: #545b62;
+  --btn-success: #28a745;
+  --btn-success-hover: #218838;
+  --btn-danger: #dc3545;
+  --btn-danger-hover: #c82333;
+  --btn-light: #f8f9fa;
+  --btn-light-hover: #e2e6ea;
+  
+  /* Menu/Sidebar Colors */
+  --menu-bg: #ffffff;
+  --menu-border: rgba(0, 0, 0, 0.1);
+  --menu-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  --menu-header-bg: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  --menu-item-hover: rgba(0, 123, 191, 0.1);
+  --menu-item-active: rgba(0, 123, 191, 0.15);
+  
+  /* Border Colors */
+  --border-light: rgba(0, 0, 0, 0.1);
+  --border-medium: rgba(0, 0, 0, 0.2);
+  --border-dark: rgba(0, 0, 0, 0.3);
+  --border-primary: rgba(0, 123, 191, 0.3);
+  
+  /* Map Colors */
+  --map-marker-primary: #007cbf;
+  --map-marker-secondary: #ffd700;
+  --map-marker-danger: #dc3545;
+  --map-marker-success: #28a745;
+  --map-marker-info: #17a2b8;
+  
+  /* Filter Colors */
+  --filter-bg: rgba(248, 249, 250, 0.8);
+  --filter-bg-hover: rgba(233, 236, 239, 0.9);
+  --filter-active-bg: rgba(0, 123, 191, 0.1);
+  --filter-active-border: rgba(0, 123, 191, 0.3);
+  
+  /* Toast/Alert Colors */
+  --toast-error-bg: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  --toast-success-bg: linear-gradient(135deg, #28a745 0%, #218838 100%);
+  --toast-info-bg: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 8px 30px rgba(0, 0, 0, 0.12);
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Reset y configuración base */
 * {
     margin: 0;
@@ -8,79 +85,247 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
 }
 
 #map-container {
     position: relative;
     width: 100vw;
     height: 100vh;
+    display: flex;
 }
 
-/* Mapa principal */
+/* Sidebar transitions and mobile backdrop */
+#sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 350px;
+    height: 100vh;
+    background: var(--menu-bg);
+    border-right: 1px solid var(--menu-border);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transform: translateX(0);
+    transition: transform var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+}
+
+#sidebar.collapsed {
+    transform: translateX(-300px);
+}
+
+/* Mobile backdrop when sidebar is open */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 100%;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-xl);
+    }
+    
+    #sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+    
+    #sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+    
+    /* Backdrop for mobile */
+    #sidebar:not(.collapsed)::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+        opacity: 1;
+        transition: opacity var(--transition-normal);
+        pointer-events: auto;
+    }
+}
+
+#sidebar-header {
+    background: var(--menu-header-bg);
+    padding: 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#sidebar-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+#sidebar-toggle {
+    background: var(--btn-light);
+    border: 1px solid var(--border-light);
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    color: var(--text-secondary);
+}
+
+#sidebar-toggle:hover {
+    background: var(--btn-light-hover);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+#sidebar-content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Toggle button when sidebar is collapsed */
+#sidebar-toggle-external {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1001;
+    background: var(--btn-primary);
+    color: var(--text-light);
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-fast);
+}
+
+#sidebar-toggle-external:hover {
+    background: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+#sidebar.collapsed + #sidebar-toggle-external {
+    display: flex;
+}
+
+/* Map */
 #map {
     width: 100%;
     height: 100%;
+    margin-left: 350px;
+    transition: margin-left var(--transition-smooth);
 }
 
-/* Panel de controles superior */
-#controls-panel {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+#sidebar.collapsed ~ #map {
+    margin-left: 50px;
 }
 
+/* Control groups within sidebar */
 .control-group {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
 }
 
 .control-group:last-child {
+    border-bottom: none;
     margin-bottom: 0;
 }
 
 .control-group h6 {
-    color: #495057;
+    color: var(--text-secondary);
     font-weight: 600;
-    margin: 0;
-    white-space: nowrap;
-    align-self: center;
+    margin-bottom: 12px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Leyenda */
-.legend-panel {
+/* Search input */
+.search-container {
+    position: relative;
+}
+
+#search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all var(--transition-fast);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+#search-input:focus {
+    outline: none;
+    border-color: var(--border-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 191, 0.1);
+}
+
+#search-btn {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--btn-primary);
+    color: var(--text-light);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+#search-btn:hover {
+    background: var(--btn-primary-hover);
+}
+
+/* Legend */
+#legend {
+    background: var(--bg-overlay);
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-lg);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
     max-width: 280px;
+    z-index: 1000;
 }
 
-.legend-panel h6 {
-    color: #495057;
+#legend h6 {
+    color: var(--text-secondary);
     font-weight: 600;
+    margin-bottom: 16px;
+    font-size: 14px;
 }
 
-/* Controles de geolocalización */
+/* Location controls */
 #location-controls {
-    position: absolute;
-    top: 100px;
-    right: 15px;
+    position: fixed;
+    top: 20px;
+    right: 20px;
     z-index: 1000;
 }
 
@@ -88,20 +333,27 @@ body {
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    transition: all var(--transition-normal);
+    background: var(--btn-light);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
 #locate-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    color: var(--text-primary);
 }
 
 #locate-btn.active {
-    background: #007cbf !important;
-    border-color: #007cbf;
-    color: white;
+    background: var(--btn-primary) !important;
+    border-color: var(--btn-primary);
+    color: var(--text-light);
 }
 
 /* Loading overlay */
@@ -111,7 +363,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--bg-overlay);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -126,26 +378,26 @@ body {
 /* Mapbox customizations */
 .mapboxgl-popup-content {
     border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow-xl);
     padding: 0;
     max-width: 320px;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid var(--border-light);
 }
 
 .mapboxgl-popup-close-button {
     font-size: 22px;
-    color: #6c757d;
+    color: var(--text-muted);
     padding: 8px;
 }
 
 .mapboxgl-popup-close-button:hover {
-    color: #495057;
+    color: var(--text-secondary);
 }
 
 .mapboxgl-ctrl-group {
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
 }
 
 .mapboxgl-ctrl button {
