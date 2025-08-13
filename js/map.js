@@ -53,11 +53,35 @@ function initializeMap() {
 }
 
 async function handleMapLoad() {
-  await loadMakiIcons();   // SDF, con ids propios "maki-<icon>"
-  setupSourceAndLayer();   // una sola capa de puntos
-  await loadMapData();     // carga datos y aplica filtros
-  setupInteractions();     // hover/click
+ await loadMakiIcons();   
+  setupSourceAndLayer();   
+  await loadMapData();     
+  setupInteractions();     
+  
+  // 🆕 Cargar Street View después de que todo esté listo
+  await initializeStreetView();
+  
   toggleLoading(false);
+}
+
+async function initializeStreetView() {
+  try {
+    // Cargar Google Maps API si no está disponible
+    if (typeof google === 'undefined') {
+      await window.loadGoogleMapsAPI();
+    }
+
+    // Solo inicializar si Google Maps se cargó correctamente
+    if (typeof google !== 'undefined' && google.maps) {
+      window.streetViewManager = new StreetViewManager(map);
+      console.log('✅ Street View integration initialized');
+    } else {
+      console.warn('⚠️ Google Maps API not available - Street View disabled');
+    }
+  } catch (error) {
+    console.error('❌ Error initializing Street View:', error);
+    // No mostrar error al usuario, simplemente deshabilitar la funcionalidad
+  }
 }
 
 // ---------- Controles ----------
@@ -244,11 +268,19 @@ function setupInteractions() {
 }
 
 function showPointPopup(feature, lngLat) {
-  const p = feature.properties || {};
+    const p = feature.properties || {};
   const cat = MAP_CONFIG.categories[p.category];
   const catName = cat ? (cat.name_en || cat.name_es) : 'Unknown';
   const title = p.nombre_en || p.nombre_es || p.name || 'Unnamed Point';
   const color = cat?.color || '#000';
+  const coordinates = feature.geometry.coordinates;
+
+  // 🆕 Agregar botón Street View si está disponible
+  const streetViewBtn = window.streetViewManager ? 
+    `<button class="popup-streetview-btn" onclick="window.streetViewManager.loadStreetView(${coordinates[1]}, ${coordinates[0]}, '${sanitizeText(title)}')">
+       <i class="bi bi-camera"></i>
+       Ver en Street View
+     </button>` : '';
 
   const html = `
     <div class="popup-content">
@@ -261,8 +293,10 @@ function showPointPopup(feature, lngLat) {
         ${p.horario ? `<p class="popup-detail"><strong>Schedule:</strong> ${sanitizeText(p.horario)}</p>` : ''}
         ${p.telefono ? `<p class="popup-detail"><strong>Phone:</strong> ${sanitizeText(p.telefono)}</p>` : ''}
         ${p.website ? `<p class="popup-website"><a href="${sanitizeText(p.website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
+        ${streetViewBtn}
       </div>
     </div>`;
+    
   new mapboxgl.Popup({ offset: 25, closeOnClick: true, closeButton: true })
     .setLngLat(lngLat).setHTML(html).addTo(map);
 }

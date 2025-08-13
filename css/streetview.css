@@ -1,0 +1,365 @@
+/* ==========================================
+   STREET VIEW INTEGRATION STYLES
+   ========================================== */
+
+/* Panel principal */
+.streetview-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-light);
+    box-shadow: var(--shadow-xl);
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform var(--transition-smooth);
+}
+
+.streetview-panel.active {
+    transform: translateX(0);
+}
+
+/* Header del panel */
+.streetview-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--menu-header-bg);
+    flex-shrink: 0;
+}
+
+.streetview-header h5 {
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.streetview-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Contenedor Street View */
+.streetview-container {
+    flex: 1;
+    min-height: 300px;
+    background: #f0f0f0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Placeholder cuando no hay Street View */
+.streetview-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.streetview-placeholder p {
+    margin: 12px 0 0 0;
+    font-size: 14px;
+}
+
+/* Estados de carga y error */
+.streetview-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.streetview-loading p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.streetview-error {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-overlay);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    max-width: 280px;
+}
+
+.streetview-error p {
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.streetview-error small {
+    font-size: 12px;
+}
+
+/* Controles del panel */
+.streetview-controls {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-primary);
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-streetview {
+    background: var(--btn-primary);
+    color: var(--text-light);
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: center;
+}
+
+.btn-streetview:hover {
+    background: var(--btn-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-streetview.secondary {
+    background: var(--btn-secondary);
+    color: var(--text-light);
+}
+
+.btn-streetview.secondary:hover {
+    background: var(--btn-secondary-hover);
+}
+
+/* Botón toggle en el mapa */
+.streetview-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1100;
+    background: var(--btn-primary);
+    color: var(--text-light);
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-fast);
+    font-size: 16px;
+}
+
+.streetview-toggle:hover {
+    background: var(--btn-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 191, 0.3);
+}
+
+.streetview-toggle.active {
+    background: #28a745;
+}
+
+.streetview-toggle.active:hover {
+    background: #218838;
+}
+
+/* Botón en popups */
+.popup-streetview-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--text-light);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.popup-streetview-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
+.popup-streetview-btn i {
+    font-size: 11px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .streetview-panel {
+        width: 100%;
+        height: 50vh;
+        top: auto;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        transform: translateY(100%);
+        border-left: none;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .streetview-panel.active {
+        transform: translateY(0);
+    }
+
+    .streetview-toggle {
+        top: 15px;
+        right: 15px;
+        width: 40px;
+        height: 40px;
+        font-size: 14px;
+    }
+
+    .streetview-header {
+        padding: 16px;
+    }
+
+    .streetview-header h5 {
+        font-size: 15px;
+    }
+
+    .streetview-header p {
+        font-size: 12px;
+    }
+
+    .streetview-controls {
+        padding: 12px 16px;
+    }
+
+    .btn-streetview {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 576px) {
+    .streetview-panel {
+        height: 45vh;
+    }
+
+    .streetview-header {
+        padding: 12px;
+    }
+
+    .streetview-header h5 {
+        font-size: 14px;
+    }
+
+    .streetview-controls {
+        padding: 10px 12px;
+        flex-direction: column;
+    }
+
+    .btn-streetview {
+        margin-bottom: 6px;
+    }
+
+    .btn-streetview:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Animaciones */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+}
+
+/* Ajustes cuando el panel está abierto */
+.streetview-panel.active ~ #map {
+    margin-right: 400px;
+    transition: margin-right var(--transition-smooth);
+}
+
+@media (max-width: 768px) {
+    .streetview-panel.active ~ #map {
+        margin-right: 0;
+        height: 50vh;
+    }
+}
+
+/* Mejoras para accesibilidad */
+.streetview-toggle:focus,
+.btn-streetview:focus,
+.popup-streetview-btn:focus {
+    outline: 2px solid var(--btn-primary);
+    outline-offset: 2px;
+}
+
+/* Soporte para movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    .streetview-panel,
+    .streetview-toggle,
+    .btn-streetview,
+    .popup-streetview-btn {
+        transition: none;
+    }
+}
