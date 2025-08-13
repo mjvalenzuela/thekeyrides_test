@@ -36,7 +36,6 @@
     cursor: pointer;
 }
 
-
 .filter-icon {
   --fi: 26px;          /* tamaño del círculo */
   --fi-inner: 18px;    /* tamaño del pictograma dentro */
@@ -67,7 +66,6 @@
 
 .unified-filter-item:hover .filter-icon { transform: scale(1.06); }
 .unified-filter-item.active .filter-icon { box-shadow: 0 0 0 3px rgba(35,143,158,.35); }
-
 
 .filter-label {
     font-size: 14px;
@@ -106,7 +104,7 @@
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/></svg>');
 }
 
-/* POPUPS - Mantener igual */
+/* POPUPS - Con botones lado a lado mejorados para móvil */
 .popup-content {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.4;
@@ -189,43 +187,71 @@
     color: var(--btn-primary-hover);
 }
 
-.popup-actions {
-    padding: 10px 16px;
-    background: var(--bg-secondary);
-    border-radius: 0 0 12px 12px;
-    border-top: 1px solid var(--border-light);
+/* ✅ CONTENEDOR PARA BOTONES LADO A LADO - MEJORADO PARA MÓVIL */
+.popup-buttons-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
 }
 
-.btn-route {
-    width: 100%;
-    background: linear-gradient(135deg, var(--btn-primary) 0%, var(--btn-primary-hover) 100%);
+.popup-route-btn,
+.popup-streetview-btn {
+    flex: 1; /* Ambos ocupan el mismo espacio */
     border: none;
-    padding: 8px 12px;
+    padding: 10px 12px;
     border-radius: 6px;
     color: var(--text-light);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--transition-normal);
-    box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
+    transition: all var(--transition-fast);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    min-height: 38px; /* Altura mínima consistente */
+    white-space: nowrap; /* Evita que el texto se parta */
 }
 
-.btn-route:hover {
+/* Botón "Go" (azul) */
+.popup-route-btn {
+    background: linear-gradient(135deg, #007cbf 0%, #0056b3 100%);
+    box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
+}
+
+.popup-route-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 123, 191, 0.4);
-    background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #004494 100%);
+    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
 }
 
-.btn-route:active {
+/* Botón "See" (verde) */
+.popup-streetview-btn {
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.popup-streetview-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%);
+}
+
+.popup-route-btn:active,
+.popup-streetview-btn:active {
     transform: translateY(0);
 }
 
-.btn-route i {
+.popup-route-btn i,
+.popup-streetview-btn i {
     font-size: 11px;
+}
+
+/* Si solo hay un botón, mantiene el ancho completo */
+.popup-route-btn:only-child,
+.popup-streetview-btn:only-child {
+    width: 100%;
+    margin-top: 8px;
 }
 
 /* Toast de errores */
@@ -288,6 +314,10 @@
     to { opacity: 0; }
 }
 
+/* ==========================================
+   🔧 POPUPS MÓVILES MEJORADOS
+   ========================================== */
+
 /* Responsivo para filtros unificados */
 @media (max-width: 768px) {
     .unified-filter-item {
@@ -303,8 +333,45 @@
     .filter-label {
         font-size: 13px;
     }
+    
+    /* ✅ BOTONES MÓVILES MEJORADOS - SIEMPRE LADO A LADO */
+    .popup-buttons-container {
+        gap: 6px;
+        margin-top: 8px;
+    }
+    
+    .popup-route-btn,
+    .popup-streetview-btn {
+        padding: 8px 10px;
+        font-size: 11px;
+        min-height: 36px;
+        flex: 1; /* ✅ MANTENER flex: 1 para que queden lado a lado */
+    }
+    
+    /* ✅ POPUPS MÓVILES - HACER MÁS COMPACTOS PERO NO APILAR BOTONES */
+    .mapboxgl-popup-content {
+        max-width: min(90vw, 280px) !important;
+        width: auto !important;
+    }
+    
+    .popup-header {
+        padding: 10px 12px;
+    }
+    
+    .popup-body {
+        padding: 10px 12px;
+    }
+    
+    .popup-header h4 {
+        font-size: 13px;
+    }
+    
+    .popup-detail {
+        font-size: 10px;
+    }
 }
 
+/* ✅ MÓVIL MUY PEQUEÑO - MANTENER BOTONES LADO A LADO */
 @media (max-width: 576px) {
     .unified-filters-container {
         gap: 6px;
@@ -323,10 +390,67 @@
     .filter-label {
         font-size: 12px;
     }
+    
+    /* ✅ MANTENER BOTONES LADO A LADO INCLUSO EN PANTALLAS MUY PEQUEÑAS */
+    .popup-buttons-container {
+        gap: 4px;
+        margin-top: 6px;
+        /* NO usar flex-direction: column */
+    }
+    
+    .popup-route-btn,
+    .popup-streetview-btn {
+        padding: 6px 8px;
+        font-size: 10px;
+        min-height: 32px;
+        flex: 1; /* ✅ MANTENER para que queden lado a lado */
+    }
+    
+    .popup-route-btn i,
+    .popup-streetview-btn i {
+        font-size: 9px;
+    }
+    
+    /* ✅ HACER POPUPS MÁS PEQUEÑOS EN MÓVIL */
+    .mapboxgl-popup-content {
+        max-width: min(95vw, 260px) !important;
+    }
+    
+    .popup-header {
+        padding: 8px 10px;
+    }
+    
+    .popup-body {
+        padding: 8px 10px;
+    }
+    
+    .popup-header h4 {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+    
+    .popup-category {
+        font-size: 9px;
+        padding: 2px 4px;
+    }
+    
+    .popup-description {
+        font-size: 11px;
+    }
+    
+    .popup-detail {
+        font-size: 9px;
+        margin: 2px 0;
+    }
+    
+    .popup-detail i {
+        font-size: 8px;
+        width: 12px;
+    }
 }
 
 /* ==========================================
-   SISTEMA DE RUTAS - ESTILOS CSS
+   SISTEMA DE RUTAS - BOTONES LADO A LADO EN MÓVIL
    ========================================== */
 
 /* Popup de opciones de transporte */
@@ -358,7 +482,7 @@
     line-height: 1.3;
 }
 
-/* 🆕 Opciones de ubicación (GPS vs Manual) */
+/* Opciones de ubicación (GPS vs Manual) */
 .location-options {
     padding: 12px;
     background: var(--bg-primary);
@@ -557,7 +681,7 @@
     color: var(--text-secondary);
 }
 
-/* Acciones de ruta */
+/* ✅ ACCIONES DE RUTA - MEJORADAS PARA MÓVIL */
 .route-actions {
     padding: 12px 16px;
     background: var(--bg-secondary);
@@ -578,7 +702,8 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    flex: 1;
+    flex: 1; /* ✅ MANTENER flex: 1 para que queden lado a lado */
+    white-space: nowrap;
 }
 
 .btn-route-action.primary {
@@ -607,56 +732,50 @@
     font-size: 11px;
 }
 
-/* Botón "Cómo llegar" en popups */
-.popup-route-btn {
-    width: 100%;
-    background: linear-gradient(135deg, #007cbf 0%, #0056b3 100%);
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    color: var(--text-light);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all var(--transition-fast);
-    box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
-}
-
-.popup-route-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 123, 191, 0.4);
-    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
-}
-
-.popup-route-btn:active {
-    transform: translateY(0);
-}
-
-.popup-route-btn i {
-    font-size: 12px;
-}
-
-/* 🆕 Popup movible para información de ruta */
-.mapboxgl-popup.route-info-popup .mapboxgl-popup-content {
+/* ✅ POPUPS MÓVILES MOVIBLES - CONFIGURACIÓN ESPECIAL */
+.mapboxgl-popup.draggable-popup .mapboxgl-popup-content {
     border-radius: 12px;
     padding: 0;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-light);
     max-width: 320px;
-    cursor: move; /* 🆕 Cursor que indica que se puede mover */
+    cursor: move;
+    touch-action: none; /* ✅ Importante para touch en móvil */
 }
 
+/* ✅ HEADER DRAGGABLE EN MÓVIL */
+.draggable-popup .route-summary {
+    cursor: grab;
+    user-select: none;
+    touch-action: none; /* ✅ Previene scroll mientras se arrastra */
+    position: relative;
+}
+
+.draggable-popup .route-summary:active {
+    cursor: grabbing;
+}
+
+/* ✅ INDICADOR VISUAL DE QUE SE PUEDE MOVER */
+.draggable-popup .route-summary::before {
+    content: '⋮⋮';
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: -2px;
+    opacity: 0.6;
+}
+
+/* Popup personalizado para rutas */
 .mapboxgl-popup.route-info-popup .mapboxgl-popup-close-button {
     font-size: 18px;
     color: var(--text-muted);
     padding: 6px;
     top: 8px;
     right: 8px;
+    z-index: 10;
 }
 
 .mapboxgl-popup.route-info-popup .mapboxgl-popup-close-button:hover {
@@ -665,18 +784,9 @@
     border-radius: 4px;
 }
 
-/* 🆕 Estilo para popup draggable */
+/* Estilo para popup draggable */
 .draggable-popup .mapboxgl-popup-tip {
     border-top-color: var(--bg-primary);
-}
-
-.draggable-popup .route-summary {
-    cursor: grab;
-    user-select: none;
-}
-
-.draggable-popup .route-summary:active {
-    cursor: grabbing;
 }
 
 /* Animaciones para transporte */
@@ -726,13 +836,13 @@
     100% { transform: rotate(360deg); }
 }
 
-/* 🆕 Indicador visual para modo de selección de punto */
+/* Indicador visual para modo de selección de punto */
 .map-crosshair {
     cursor: crosshair !important;
 }
 
 .map-crosshair::after {
-    content: '📍 Haz clic para establecer punto de inicio';
+    content: 'Click to set start point';
     position: fixed;
     top: 20px;
     left: 50%;
@@ -747,10 +857,10 @@
     box-shadow: var(--shadow-lg);
 }
 
-/* Responsivo */
+/* ✅ RESPONSIVE PARA RUTAS - MANTENER BOTONES LADO A LADO */
 @media (max-width: 768px) {
     .route-options-popup {
-        max-width: 260px;
+        max-width: min(90vw, 280px);
     }
     
     .transport-options {
@@ -777,7 +887,7 @@
     }
     
     .route-info-panel {
-        max-width: 280px;
+        max-width: min(90vw, 280px);
     }
     
     .route-summary,
@@ -785,18 +895,16 @@
         padding: 12px;
     }
     
+    /* ✅ BOTONES DE RUTA EN MÓVIL - LADO A LADO */
     .route-actions {
         padding: 10px 12px;
+        gap: 6px; /* Reducir gap pero mantener flex */
     }
     
     .btn-route-action {
         padding: 8px 10px;
         font-size: 11px;
-    }
-    
-    .popup-route-btn {
-        padding: 8px 12px;
-        font-size: 12px;
+        flex: 1; /* ✅ MANTENER para que queden lado a lado */
     }
 
     .location-options {
@@ -811,37 +919,55 @@
     .location-option i {
         font-size: 14px;
     }
+    
+    /* ✅ INDICADOR DE MOVIMIENTO MÁS VISIBLE EN MÓVIL */
+    .draggable-popup .route-summary::before {
+        font-size: 16px;
+        top: 6px;
+        right: 10px;
+        opacity: 0.8;
+    }
 }
 
+/* ✅ MÓVIL MUY PEQUEÑO - MANTENER DISEÑO COMPACTO */
 @media (max-width: 576px) {
     .transport-options {
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: 1fr 1fr; /* ✅ MANTENER 2 columnas en lugar de 1 */
+        gap: 4px;
     }
     
     .transport-option {
-        flex-direction: row;
-        justify-content: flex-start;
-        min-height: 50px;
-        padding: 8px 12px;
-        text-align: left;
+        padding: 8px 4px;
+        min-height: 60px;
     }
     
     .transport-option i {
-        margin-bottom: 0;
-        margin-right: 8px;
+        font-size: 14px;
     }
     
     .transport-option span {
-        flex: 1;
+        font-size: 9px;
     }
     
+    .transport-option small {
+        font-size: 7px;
+    }
+    
+    /* ✅ BOTONES DE RUTA - MANTENER LADO A LADO */
     .route-actions {
-        flex-direction: column;
+        padding: 8px 10px;
+        gap: 4px;
+        /* NO cambiar a flex-direction: column */
     }
     
     .btn-route-action {
-        width: 100%;
+        padding: 6px 8px;
+        font-size: 10px;
+        flex: 1; /* ✅ MANTENER para que queden lado a lado */
+    }
+    
+    .btn-route-action i {
+        font-size: 9px;
     }
 
     .location-option {
@@ -850,7 +976,61 @@
     }
 
     .route-info-panel {
-        max-width: 250px;
+        max-width: min(95vw, 260px);
+    }
+    
+    .route-summary,
+    .route-details {
+        padding: 10px;
+    }
+    
+    .route-header {
+        padding: 12px;
+    }
+    
+    .route-header h6 {
+        font-size: 14px;
+    }
+    
+    .route-header p {
+        font-size: 11px;
+    }
+    
+    /* ✅ HACER POPUPS DE PUNTOS MÁS COMPACTOS */
+    .popup-content {
+        font-size: 12px;
+    }
+}
+
+/* ✅ PANTALLAS EXTRA PEQUEÑAS - OPTIMIZACIÓN FINAL */
+@media (max-width: 400px) {
+    .route-info-panel {
+        max-width: min(98vw, 240px);
+    }
+    
+    .popup-buttons-container {
+        gap: 3px;
+    }
+    
+    .popup-route-btn,
+    .popup-streetview-btn {
+        padding: 5px 6px;
+        font-size: 9px;
+        min-height: 30px;
+    }
+    
+    .popup-route-btn i,
+    .popup-streetview-btn i {
+        font-size: 8px;
+    }
+    
+    .btn-route-action {
+        padding: 5px 6px;
+        font-size: 9px;
+    }
+    
+    .btn-route-action i {
+        font-size: 8px;
     }
 }
 
@@ -858,7 +1038,8 @@
 .transport-option:focus,
 .location-option:focus,
 .btn-route-action:focus,
-.popup-route-btn:focus {
+.popup-route-btn:focus,
+.popup-streetview-btn:focus {
     outline: 2px solid var(--btn-primary);
     outline-offset: 2px;
 }
@@ -868,449 +1049,13 @@
     .transport-option,
     .location-option,
     .btn-route-action,
-    .popup-route-btn {
+    .popup-route-btn,
+    .popup-streetview-btn {
         transition: none;
     }
     
     .transport-option:hover i,
     .location-option:hover i {
-        animation: none;
-    }
-    
-    .route-calculating::after {
-        animation: none;
-    }
-}
-
-/* Colores específicos por transporte */
-.transport-option[data-transport="e-bike"]:hover {
-    border-color: #28a745;
-}
-
-.transport-option[data-transport="golf-cart"]:hover {
-    border-color: #17a2b8;
-}
-
-.transport-option[data-transport="e-moped"]:hover {
-    border-color: #ffc107;
-}
-
-.transport-option[data-transport="luxury-ride"]:hover {
-    border-color: #6f42c1;
-}
-
-/* Popup de opciones de transporte */
-.route-options-popup {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 280px;
-    padding: 0;
-}
-
-.route-header {
-    padding: 16px;
-    background: var(--menu-header-bg);
-    border-radius: 12px 12px 0 0;
-    border-bottom: 1px solid var(--border-light);
-    text-align: center;
-}
-
-.route-header h6 {
-    margin: 0 0 4px 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.route-header p {
-    margin: 0;
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.3;
-}
-
-/* Opciones de transporte */
-.transport-options {
-    padding: 12px;
-    background: var(--bg-primary);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.transport-option {
-    background: var(--filter-bg);
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    padding: 12px 8px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    text-align: center;
-    font-size: 12px;
-    min-height: 70px;
-    justify-content: center;
-}
-
-.transport-option:hover {
-    background: var(--filter-bg-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-    border-color: var(--border-medium);
-}
-
-.transport-option:active {
-    transform: translateY(0);
-}
-
-.transport-option i {
-    font-size: 18px;
-    margin-bottom: 2px;
-}
-
-.transport-option span {
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 11px;
-}
-
-.transport-option small {
-    color: var(--text-muted);
-    font-size: 9px;
-    margin-top: 2px;
-}
-
-.route-info {
-    padding: 8px 12px;
-    background: var(--bg-secondary);
-    border-radius: 0 0 12px 12px;
-    border-top: 1px solid var(--border-light);
-}
-
-.route-info small {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--text-muted);
-    font-size: 10px;
-    justify-content: center;
-}
-
-.route-info i {
-    font-size: 10px;
-}
-
-/* Panel de información de ruta */
-.route-info-panel {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 300px;
-    padding: 0;
-    background: var(--bg-primary);
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.route-summary {
-    padding: 16px;
-    background: var(--menu-header-bg);
-    border-bottom: 1px solid var(--border-light);
-}
-
-.transport-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.transport-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.route-summary h6 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    line-height: 1.3;
-}
-
-/* Detalles de la ruta */
-.route-details {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.detail-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-}
-
-.detail-item i {
-    width: 16px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 12px;
-}
-
-.detail-item span {
-    color: var(--text-secondary);
-}
-
-/* Acciones de ruta */
-.route-actions {
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border-light);
-    display: flex;
-    gap: 8px;
-}
-
-.btn-route-action {
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    flex: 1;
-}
-
-.btn-route-action.primary {
-    background: linear-gradient(135deg, var(--btn-primary) 0%, var(--btn-primary-hover) 100%);
-    color: var(--text-light);
-    box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
-}
-
-.btn-route-action.primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 123, 191, 0.4);
-    background: linear-gradient(135deg, var(--btn-primary-hover) 0%, #004494 100%);
-}
-
-.btn-route-action.secondary {
-    background: var(--btn-secondary);
-    color: var(--text-light);
-}
-
-.btn-route-action.secondary:hover {
-    background: var(--btn-secondary-hover);
-    transform: translateY(-1px);
-}
-
-.btn-route-action i {
-    font-size: 11px;
-}
-
-/* Botón "Cómo llegar" en popups */
-.popup-route-btn {
-    width: 100%;
-    background: linear-gradient(135deg, #007cbf 0%, #0056b3 100%);
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    color: var(--text-light);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all var(--transition-fast);
-    box-shadow: 0 2px 8px rgba(0, 123, 191, 0.3);
-}
-
-.popup-route-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 123, 191, 0.4);
-    background: linear-gradient(135deg, #0056b3 0%, #004494 100%);
-}
-
-.popup-route-btn:active {
-    transform: translateY(0);
-}
-
-.popup-route-btn i {
-    font-size: 12px;
-}
-
-/* Popup personalizado para rutas */
-.mapboxgl-popup.route-info-popup .mapboxgl-popup-content {
-    border-radius: 12px;
-    padding: 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    border: 1px solid var(--border-light);
-    max-width: 320px;
-}
-
-.mapboxgl-popup.route-info-popup .mapboxgl-popup-close-button {
-    font-size: 18px;
-    color: var(--text-muted);
-    padding: 6px;
-    top: 8px;
-    right: 8px;
-}
-
-/* Animaciones para transporte */
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.05);
-    }
-    100% {
-        transform: scale(1);
-    }
-}
-
-.transport-option:hover i {
-    animation: pulse 0.6s ease-in-out;
-}
-
-/* Estados de carga */
-.route-calculating {
-    position: relative;
-    pointer-events: none;
-    opacity: 0.7;
-}
-
-.route-calculating::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid var(--border-light);
-    border-top: 2px solid var(--btn-primary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Responsivo */
-@media (max-width: 768px) {
-    .route-options-popup {
-        max-width: 260px;
-    }
-    
-    .transport-options {
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
-        padding: 10px;
-    }
-    
-    .transport-option {
-        padding: 10px 6px;
-        min-height: 65px;
-    }
-    
-    .transport-option i {
-        font-size: 16px;
-    }
-    
-    .transport-option span {
-        font-size: 10px;
-    }
-    
-    .transport-option small {
-        font-size: 8px;
-    }
-    
-    .route-info-panel {
-        max-width: 280px;
-    }
-    
-    .route-summary,
-    .route-details {
-        padding: 12px;
-    }
-    
-    .route-actions {
-        padding: 10px 12px;
-    }
-    
-    .btn-route-action {
-        padding: 8px 10px;
-        font-size: 11px;
-    }
-    
-    .popup-route-btn {
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-}
-
-@media (max-width: 576px) {
-    .transport-options {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-    
-    .transport-option {
-        flex-direction: row;
-        justify-content: flex-start;
-        min-height: 50px;
-        padding: 8px 12px;
-        text-align: left;
-    }
-    
-    .transport-option i {
-        margin-bottom: 0;
-        margin-right: 8px;
-    }
-    
-    .transport-option span {
-        flex: 1;
-    }
-    
-    .route-actions {
-        flex-direction: column;
-    }
-    
-    .btn-route-action {
-        width: 100%;
-    }
-}
-
-/* Mejoras de accesibilidad */
-.transport-option:focus,
-.btn-route-action:focus,
-.popup-route-btn:focus {
-    outline: 2px solid var(--btn-primary);
-    outline-offset: 2px;
-}
-
-/* Soporte para movimiento reducido */
-@media (prefers-reduced-motion: reduce) {
-    .transport-option,
-    .btn-route-action,
-    .popup-route-btn {
-        transition: none;
-    }
-    
-    .transport-option:hover i {
         animation: none;
     }
     

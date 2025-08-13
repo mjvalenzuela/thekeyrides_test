@@ -1,13 +1,13 @@
 // ===============================
-// MAPA CON SISTEMA DE RUTAS INTEGRADO
+// MAP WITH INTEGRATED ROUTING SYSTEM
 // ===============================
 
 let map;
 let userLocation = null;
 let activeFilters = new Set(Object.keys(MAP_CONFIG.categories));
-let routingManager; // 🆕 Gestor de rutas
+let routingManager; // Routing manager
 
-/** Mapeo de categorías -> nombre de icono Maki (v7) */
+/** Category mapping -> Maki icon name (v7) */
 const MAKI_ICONS = {
   office: 'building',
   restaurant: 'cafe',
@@ -17,7 +17,7 @@ const MAKI_ICONS = {
   route: 'arrow'
 };
 
-// ---------- Inicio ----------
+// ---------- Start ----------
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(initializeMap, 100);
 });
@@ -27,11 +27,23 @@ function initializeMap() {
     validateConfiguration();
     mapboxgl.accessToken = MAP_TOKENS.mapbox;
 
+    // Responsive zoom configuration
+    let initialZoom = MAP_CONFIG.zoom;
+    let initialCenter = MAP_CONFIG.center;
+    
+    // Adjust zoom for mobile devices
+    if (window.innerWidth <= 768) {
+      initialZoom = MAP_CONFIG.zoom - 1; // Reduce zoom by 1 on mobile
+    }
+    if (window.innerWidth <= 480) {
+      initialZoom = MAP_CONFIG.zoom - 1.5; // Reduce zoom by 1.5 on very small screens
+    }
+
     map = new mapboxgl.Map({
       container: 'map',
       style: MAP_CONFIG.style,
-      center: MAP_CONFIG.center,
-      zoom: MAP_CONFIG.zoom,
+      center: initialCenter,
+      zoom: initialZoom,
       minZoom: MAP_CONFIG.minZoom,
       maxZoom: MAP_CONFIG.maxZoom,
       attributionControl: true,
@@ -46,10 +58,38 @@ function initializeMap() {
     });
 
     setupControls();
+    
+    // Listen for window resize to adjust zoom
+    window.addEventListener('resize', debounce(handleWindowResize, 300));
+    
   } catch (err) {
     console.error('Error initializing map:', err);
     showToast(getText('error_load'), 'error');
     toggleLoading(false);
+  }
+}
+
+function handleWindowResize() {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  if (window.innerWidth <= 768) hideSidebar(); else showSidebar();
+  
+  // Adjust zoom on resize if needed
+  if (map) {
+    const currentZoom = map.getZoom();
+    let targetZoom = MAP_CONFIG.zoom;
+    
+    if (window.innerWidth <= 768) {
+      targetZoom = MAP_CONFIG.zoom - 1;
+    }
+    if (window.innerWidth <= 480) {
+      targetZoom = MAP_CONFIG.zoom - 1.5;
+    }
+    
+    // Only adjust if zoom difference is significant
+    if (Math.abs(currentZoom - targetZoom) > 0.5) {
+      map.easeTo({ zoom: targetZoom, duration: 500 });
+    }
   }
 }
 
@@ -59,24 +99,24 @@ async function handleMapLoad() {
   await loadMapData();     
   setupInteractions();     
   
-  // 🆕 Inicializar sistema de rutas
+  // Initialize routing system
   await initializeRoutingSystem();
   
-  // Cargar Street View después de que todo esté listo
+  // Load Street View after everything is ready
   await initializeStreetView();
   
   toggleLoading(false);
 }
 
-// 🆕 Inicializar sistema de rutas
+// Initialize routing system
 async function initializeRoutingSystem() {
   try {
     routingManager = new RoutingManager(map);
-    window.routingManager = routingManager; // Exposer globalmente
+    window.routingManager = routingManager; // Expose globally
     console.log('✅ Routing system initialized');
   } catch (error) {
     console.error('❌ Error initializing routing system:', error);
-    showToast('Sistema de rutas no disponible', 'error', 3000);
+    showToast(getText('routing_not_available'), 'error', 3000);
   }
 }
 
@@ -97,7 +137,7 @@ async function initializeStreetView() {
   }
 }
 
-// ---------- Controles ----------
+// ---------- Controls ----------
 function setupControls() {
   map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
   map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
@@ -116,18 +156,18 @@ function setupControls() {
 
 function doSearch(q) {
   q = (q || '').trim();
-  if (!q) return showToast('Enter something to search', 'info', 2000);
-  showToast(`Searching: "${q}"`, 'info', 1500);
+  if (!q) return showToast(getText('enter_search'), 'info', 2000);
+  showToast(`${getText('searching')}: "${q}"`, 'info', 1500);
 }
 
-// ---------- Íconos MAKI (SDF propios) ----------
+// ---------- MAKI Icons (SDF) ----------
 async function loadMakiIcons() {
   map.on('styleimagemissing', (e) => ensureMakiIcon(e.id));
 
   const needed = new Set([...Object.values(MAKI_ICONS), 'marker']);
   for (const name of needed) await ensureMakiIcon(`maki-${name}`);
 
-  console.log('Iconos Maki listos para usar');
+  console.log('Maki icons ready for use');
 }
 
 async function ensureMakiIcon(requestedId) {
@@ -144,16 +184,16 @@ async function ensureMakiIcon(requestedId) {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try { if (!map.hasImage(requestedId)) map.addImage(requestedId, img, { sdf: true }); }
-      catch (e) { console.warn('addImage fallo', requestedId, e); }
+      catch (e) { console.warn('addImage failed', requestedId, e); }
       finally { URL.revokeObjectURL(img.src); }
     };
     img.src = URL.createObjectURL(blob);
   } catch (err) {
-    console.warn(`[Maki] No se pudo cargar "${requestedId}": ${err.message}`);
+    console.warn(`[Maki] Could not load "${requestedId}": ${err.message}`);
   }
 }
 
-// ---------- Fuente + Capa (sin clústeres) ----------
+// ---------- Source + Layer (no clusters) ----------
 function setupSourceAndLayer() {
   if (map.getLayer('points-layer')) map.removeLayer('points-layer');
   if (map.getLayer('points-badge')) map.removeLayer('points-badge');
@@ -164,7 +204,7 @@ function setupSourceAndLayer() {
     data: { type: 'FeatureCollection', features: [] }
   });
 
-  // 1) Fondo tipo "badge" (círculo de color)
+  // 1) Badge background (colored circle)
   map.addLayer({
     id: 'points-badge',
     type: 'circle',
@@ -192,7 +232,7 @@ function setupSourceAndLayer() {
     }
   });
 
-  // 2) Pictograma blanco (SDF) encima del círculo
+  // 2) White pictogram (SDF) on top of circle
   map.addLayer({
     id: 'points-layer',
     type: 'symbol',
@@ -225,7 +265,7 @@ function getMakiIconExpression() {
   return expr;
 }
 
-// ---------- Interacciones ----------
+// ---------- Interactions ----------
 function setupInteractions() {
   const L = 'points-layer';
   map.on('mouseenter', L, () => map.getCanvas().style.cursor = 'pointer');
@@ -239,7 +279,7 @@ function setupInteractions() {
   });
 }
 
-// 🆕 Popup actualizado con botón "Cómo llegar"
+// Updated popup with side-by-side "Go" and "See" buttons
 function showPointPopup(feature, lngLat) {
   const p = feature.properties || {};
   const cat = MAP_CONFIG.categories[p.category];
@@ -248,19 +288,24 @@ function showPointPopup(feature, lngLat) {
   const color = cat?.color || '#000';
   const coordinates = feature.geometry.coordinates;
 
-  // Botón Street View si está disponible
+  // Street View button if available
   const streetViewBtn = window.streetViewManager ? 
     `<button class="popup-streetview-btn" onclick="window.streetViewManager.loadStreetView(${coordinates[1]}, ${coordinates[0]}, '${sanitizeText(title)}')">
        <i class="bi bi-camera"></i>
        See
      </button>` : '';
 
-  // 🆕 Botón "Cómo llegar" - siempre visible
+  // "Go" button - always visible
   const routeBtn = `
     <button class="popup-route-btn" onclick="window.routingManager?.createRouteOptionsPopup([${coordinates[0]}, ${coordinates[1]}], '${sanitizeText(title)}')">
       <i class="bi bi-geo-alt"></i>
       Go
     </button>`;
+
+  // Button container for side-by-side layout
+  const buttonsHtml = streetViewBtn ? 
+    `<div class="popup-buttons-container">${routeBtn}${streetViewBtn}</div>` : 
+    routeBtn;
 
   const html = `
     <div class="popup-content">
@@ -270,11 +315,10 @@ function showPointPopup(feature, lngLat) {
       </div>
       <div class="popup-body">
         ${p.descripcion_en || p.descripcion_es ? `<p class="popup-description">${sanitizeText(p.descripcion_en || p.descripcion_es)}</p>` : ''}
-        ${p.horario ? `<p class="popup-detail"><strong>Schedule:</strong> ${sanitizeText(p.horario)}</p>` : ''}
-        ${p.telefono ? `<p class="popup-detail"><strong>Phone:</strong> ${sanitizeText(p.telefono)}</p>` : ''}
-        ${p.website ? `<p class="popup-website"><a href="${sanitizeText(p.website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
-        ${routeBtn}
-        ${streetViewBtn}
+        ${p.horario ? `<p class="popup-detail"><strong>${getText('schedule')}:</strong> ${sanitizeText(p.horario)}</p>` : ''}
+        ${p.telefono ? `<p class="popup-detail"><strong>${getText('phone')}:</strong> ${sanitizeText(p.telefono)}</p>` : ''}
+        ${p.website ? `<p class="popup-website"><a href="${sanitizeText(p.website)}" target="_blank" rel="noopener">${getText('website')}</a></p>` : ''}
+        ${buttonsHtml}
       </div>
     </div>`;
     
@@ -282,7 +326,7 @@ function showPointPopup(feature, lngLat) {
     .setLngLat(lngLat).setHTML(html).addTo(map);
 }
 
-// ---------- Datos + Filtros ----------
+// ---------- Data + Filters ----------
 async function loadMapData() {
   try {
     toggleLoading(true);
@@ -351,7 +395,7 @@ function applyFilters() {
   });
 }
 
-// ---------- Geolocalización ACTUALIZADA ----------
+// ---------- Updated Geolocation ----------
 function requestUserLocation() {
   if (!navigator.geolocation) return showToast('Geolocation not supported', 'error');
   const btn = document.getElementById('locate-btn');
@@ -363,12 +407,12 @@ function requestUserLocation() {
   );
 }
 
-// 🆕 Actualizada para sincronizar con sistema de rutas (incluyendo ubicaciones manuales)
+// Updated to sync with routing system (including manual locations)
 function onLocationOK(position, btn) {
   const coords = [position.coords.longitude, position.coords.latitude];
   userLocation = coords;
   
-  // 🆕 Sincronizar con sistema de rutas
+  // Sync with routing system
   if (routingManager) {
     routingManager.setUserLocation(coords);
   }
@@ -376,7 +420,7 @@ function onLocationOK(position, btn) {
   map.flyTo({ center: coords, zoom: 16, duration: 1500 });
   addUserLocationMarker(coords);
   setLocateBtn(btn, false);
-  showToast('Ubicación encontrada correctamente', 'success', 2000);
+  showToast(getText('location_found'), 'success', 2000);
 }
 
 function onLocationErr(err, btn) {
@@ -422,14 +466,14 @@ function addUserLocationMarker(coords) {
   });
 }
 
-// ---------- Validación ----------
+// ---------- Validation ----------
 function validateConfiguration() {
   if (typeof MAP_TOKENS === 'undefined') throw new Error('MAP_TOKENS missing');
   if (!MAP_TOKENS.mapbox || MAP_TOKENS.mapbox === 'your_real_token_here') throw new Error('Mapbox token not configured');
   if (typeof mapboxgl === 'undefined') throw new Error('Mapbox GL not loaded');
 }
 
-// 🆕 Funciones auxiliares para el sistema de rutas
+// Helper functions for routing system
 function getUserLocation() {
   return userLocation;
 }
@@ -438,7 +482,7 @@ function hasUserLocation() {
   return !!userLocation;
 }
 
-// Exponer funciones globales
+// Expose global functions
 window.toggleCategoryFilter = toggleCategoryFilter;
 window.toggleSidebar = toggleSidebar;
 window.showSidebar = showSidebar;

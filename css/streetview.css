@@ -194,7 +194,7 @@
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    margin-top: 8px;
+    /*margin-top: 8px;*/
     display: flex;
     align-items: center;
     justify-content: center;

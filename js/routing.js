@@ -1,74 +1,76 @@
 /**
- * SISTEMA DE RUTAS PARA MAPBOX
- * Integra rutas desde ubicación del usuario hasta puntos del mapa
- * Incluye diferentes medios de transporte con tiempos y distancias
- * Soporta ubicación GPS y selección manual de punto de inicio
+ * ROUTING SYSTEM FOR MAPBOX
+ * Integrates routes from user location to map points
+ * Includes different transport modes with times and distances
+ * Supports GPS location and manual start point selection
  */
 
 class RoutingManager {
     constructor(map) {
         this.map = map;
         this.userLocation = null;
-        this.manualStartLocation = null; // 🆕 Ubicación manual del usuario
+        this.manualStartLocation = null; // Manual user location
         this.currentRoute = null;
         this.routeSource = 'route-source';
         this.routeLayer = 'route-layer';
         this.startMarker = null;
         this.endMarker = null;
-        this.isSettingStartPoint = false; // 🆕 Estado para colocar punto de inicio
+        this.isSettingStartPoint = false; // State for placing start point
 
-        // 🆕 Configuración de área de servicio (bounding box)
+        // 🔧 ÁREA DE SERVICIO CORREGIDA PARA KEY WEST, FLORIDA
         this.serviceArea = {
-            // Área alrededor de Isla Mujeres (ajusta según tu zona de servicio)
-            north: 21.3,    // Latitud norte
-            south: 21.1,    // Latitud sur  
-            east: -86.6,    // Longitud este
-            west: -86.8     // Longitud oeste
+            north: 25.0905196613355,      // Norte de Key West
+            south: 24.044242791374604,    // Sur de Key West  
+            east: -81.63594411815554,     // Este de Key West
+            west: -81.9138529228222       // Oeste de Key West
         };
 
-        // Configuración de medios de transporte
+        // Transport modes configuration
         this.transportModes = {
             'e-bike': {
                 name: 'E-Bike',
                 icon: 'bi-bicycle',
                 color: '#28a745',
-                speed: 20, // km/h promedio
+                speed: 20, // km/h average
                 profile: 'cycling'
             },
             'golf-cart': {
                 name: 'Golf Cart',
                 icon: 'bi-truck',
                 color: '#17a2b8',
-                speed: 15, // km/h promedio
+                speed: 15, // km/h average
                 profile: 'driving'
             },
             'e-moped': {
                 name: 'E-Moped',
                 icon: 'bi-scooter',
                 color: '#ffc107',
-                speed: 35, // km/h promedio
+                speed: 35, // km/h average
                 profile: 'driving'
             },
             'luxury-ride': {
                 name: 'Luxury Ride',
                 icon: 'bi-car-front-fill',
                 color: '#6f42c1',
-                speed: 40, // km/h promedio
+                speed: 40, // km/h average
                 profile: 'driving'
             }
         };
 
         this.init();
+        
+        // 🔧 LOG PARA DEBUGGING
+        console.log('🌎 Service Area configured:', this.serviceArea);
     }
 
     init() {
         this.setupRouteLayers();
-        this.setupMapClickHandler(); // 🆕 Handler para colocar punto de inicio
+        this.setupMapClickHandler(); // Handler for placing start point
         console.log('✅ Routing system initialized');
     }
 
     /**
-     * 🆕 Configurar handler para clicks en el mapa (colocar punto de inicio)
+     * Setup handler for map clicks (place start point)
      */
     setupMapClickHandler() {
         this.map.on('click', (e) => {
@@ -77,65 +79,78 @@ class RoutingManager {
                 this.setManualStartLocation(coords);
                 this.isSettingStartPoint = false;
                 this.map.getCanvas().style.cursor = '';
-                showToast('Punto de inicio establecido', 'success', 2000);
+                showToast(getText('start_point_set'), 'success', 2000);
             }
         });
     }
 
     /**
-     * 🆕 Verificar si ubicación está dentro del área de servicio
+     * 🔧 FUNCIÓN CORREGIDA: Check if location is within service area
      */
     isLocationInServiceArea(lat, lng) {
-        return lat >= this.serviceArea.south &&
+        const inArea = lat >= this.serviceArea.south &&
             lat <= this.serviceArea.north &&
             lng >= this.serviceArea.west &&
             lng <= this.serviceArea.east;
+            
+        // 🔧 LOG PARA DEBUGGING
+        console.log('🌍 Location check:', {
+            coordinates: { lat, lng },
+            serviceArea: this.serviceArea,
+            inArea: inArea,
+            checks: {
+                latOK: `${lat} >= ${this.serviceArea.south} && ${lat} <= ${this.serviceArea.north}`,
+                lngOK: `${lng} >= ${this.serviceArea.west} && ${lng} <= ${this.serviceArea.east}`
+            }
+        });
+        
+        return inArea;
     }
 
     /**
-     * 🆕 Establecer ubicación manual de inicio
+     * Set manual start location
      */
     setManualStartLocation(coords) {
         this.manualStartLocation = coords;
 
-        // Limpiar marcador de inicio anterior
+        // Clear previous start marker
         if (this.startMarker) {
             this.startMarker.remove();
         }
 
-        // Agregar marcador de inicio manual
+        // Add manual start marker
         this.startMarker = new mapboxgl.Marker({
             color: '#007cbf',
             scale: 0.9
         })
             .setLngLat(coords)
-            .setPopup(new mapboxgl.Popup().setHTML('<strong>Punto de inicio</strong>'))
+            .setPopup(new mapboxgl.Popup().setHTML('<strong>Start point</strong>'))
             .addTo(this.map);
     }
 
     /**
-     * 🆕 Activar modo de selección de punto de inicio
+     * Enable start point selection mode
      */
     enableStartPointSelection() {
         this.isSettingStartPoint = true;
         this.map.getCanvas().style.cursor = 'crosshair';
 
-        // Cerrar popups existentes
+        // Close existing popups
         const popups = document.querySelectorAll('.mapboxgl-popup');
         popups.forEach(popup => popup.remove());
 
-        showToast('Haz clic en el mapa para establecer tu punto de inicio', 'info', 4000);
+        showToast(getText('click_to_set_start'), 'info', 4000);
     }
 
     /**
-     * 🆕 Obtener ubicación de inicio (manual o GPS)
+     * Get start location (manual or GPS)
      */
     getStartLocation() {
         return this.manualStartLocation || this.userLocation;
     }
 
     /**
-     * 🆕 Convertir metros a km y millas
+     * Convert meters to km and miles
      */
     formatDistance(meters) {
         const km = (meters / 1000).toFixed(1);
@@ -148,10 +163,10 @@ class RoutingManager {
     }
 
     /**
-     * Configurar capas para mostrar rutas
+     * Setup layers to display routes
      */
     setupRouteLayers() {
-        // Limpiar capas existentes
+        // Clear existing layers
         if (this.map.getLayer(this.routeLayer)) {
             this.map.removeLayer(this.routeLayer);
         }
@@ -159,7 +174,7 @@ class RoutingManager {
             this.map.removeSource(this.routeSource);
         }
 
-        // Agregar fuente para rutas
+        // Add route source
         this.map.addSource(this.routeSource, {
             type: 'geojson',
             data: {
@@ -168,7 +183,7 @@ class RoutingManager {
             }
         });
 
-        // Agregar capa para mostrar la ruta
+        // Add layer to display route
         this.map.addLayer({
             id: this.routeLayer,
             type: 'line',
@@ -186,31 +201,31 @@ class RoutingManager {
     }
 
     /**
-     * Crear popup con opciones de transporte o ubicación
+     * Create popup with transport or location options
      */
     createRouteOptionsPopup(destination, destinationName) {
         const startLocation = this.getStartLocation();
 
         if (!startLocation) {
-            // 🆕 Mostrar opciones cuando no hay ubicación
+            // Show options when no location available
             const noLocationHTML = `
                 <div class="route-options-popup">
                     <div class="route-header">
-                        <h6>¿Desde dónde quieres partir?</h6>
-                        <p>Necesitas establecer un punto de inicio</p>
+                        <h6>Where do you want to start from?</h6>
+                        <p>You need to set a start point</p>
                     </div>
                     <div class="location-options">
                         <button class="location-option" onclick="window.routingManager.requestUserLocation('${destinationName.replace(/'/g, "\\'")}', [${destination[0]}, ${destination[1]}])">
                             <i class="bi bi-geo-alt" style="color: #28a745;"></i>
-                            <span>Usar mi ubicación GPS</span>
+                            <span>Use my GPS location</span>
                         </button>
                         <button class="location-option" onclick="window.routingManager.enableStartPointSelection()">
                             <i class="bi bi-cursor" style="color: #007cbf;"></i>
-                            <span>Elegir punto en el mapa</span>
+                            <span>Choose point on map</span>
                         </button>
                     </div>
                     <div class="route-info">
-                        <small><i class="bi bi-info-circle"></i> Después podrás elegir tu transporte</small>
+                        <small><i class="bi bi-info-circle"></i> You can then choose your transport</small>
                     </div>
                 </div>
             `;
@@ -226,7 +241,7 @@ class RoutingManager {
             return;
         }
 
-        // Popup normal con opciones de transporte
+        // Normal popup with transport options
         const transportButtons = Object.entries(this.transportModes)
             .map(([key, mode]) => `
                 <button class="transport-option" 
@@ -240,14 +255,14 @@ class RoutingManager {
         const popupContent = `
             <div class="route-options-popup">
                 <div class="route-header">
-                    <h6>¿Cómo quieres llegar?</h6>
-                    <p>Selecciona tu medio de transporte preferido</p>
+                    <h6>How do you want to get there?</h6>
+                    <p>Select your preferred transport mode</p>
                 </div>
                 <div class="transport-options">
                     ${transportButtons}
                 </div>
                 <div class="route-info">
-                    <small><i class="bi bi-info-circle"></i> Los tiempos son aproximados</small>
+                    <small><i class="bi bi-info-circle"></i> Times are approximate</small>
                 </div>
             </div>
         `;
@@ -263,51 +278,53 @@ class RoutingManager {
     }
 
     /**
-     * 🆕 Solicitar ubicación del usuario con validación de área
+     * 🔧 FUNCIÓN CORREGIDA: Request user location with area validation
      */
     async requestUserLocation(destinationName, destination) {
         if (!navigator.geolocation) {
-            showToast('Geolocalización no soportada', 'error');
+            showToast('Geolocation not supported', 'error');
             return;
         }
 
-        showToast('Obteniendo tu ubicación...', 'info', 2000);
+        showToast('Getting your location...', 'info', 2000);
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const coords = [position.coords.longitude, position.coords.latitude];
 
-                console.log('🌍 Coordenadas GPS capturadas:', {
+                console.log('🌍 GPS coordinates captured:', {
                     latitude: coords[1],
                     longitude: coords[0],
-                    accuracy: position.coords.accuracy + ' metros'
+                    accuracy: position.coords.accuracy + ' meters'
                 });
 
-                // 🆕 Verificar si está en área de servicio
-                if (!this.isLocationInServiceArea(coords[1], coords[0])) {
+                // 🔧 Check if within service area with detailed logging
+                const isInArea = this.isLocationInServiceArea(coords[1], coords[0]);
+                
+                if (!isInArea) {
                     const areaCheckHTML = `
                         <div class="route-options-popup">
                             <div class="route-header">
-                                <h6>⚠️ Fuera del área de servicio</h6>
-                                <p>Estás ubicado fuera de nuestra zona de operación</p>
+                                <h6>⚠️ Outside service area</h6>
+                                <p>You are located outside our operation zone</p>
                             </div>
                             <div class="location-options">
                                 <button class="location-option" onclick="window.routingManager.enableStartPointSelection()">
                                     <i class="bi bi-cursor" style="color: #007cbf;"></i>
-                                    <span>Elegir punto en el mapa</span>
+                                    <span>Choose point on map</span>
                                 </button>
                                 <button class="location-option secondary" onclick="document.querySelectorAll('.mapboxgl-popup').forEach(p => p.remove())">
                                     <i class="bi bi-x"></i>
-                                    <span>Cancelar</span>
+                                    <span>Cancel</span>
                                 </button>
                             </div>
                             <div class="route-info">
-                                <small><i class="bi bi-info-circle"></i> Puedes elegir un punto de inicio en el área del mapa</small>
+                                <small><i class="bi bi-info-circle"></i> You can choose a start point in the map area</small>
                             </div>
                         </div>
                     `;
 
-                    // Cerrar popup anterior y mostrar nuevo
+                    // Close previous popup and show new one
                     document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
 
                     new mapboxgl.Popup({
@@ -319,23 +336,23 @@ class RoutingManager {
                         .setHTML(areaCheckHTML)
                         .addTo(this.map);
 
-                    showToast('Ubicación fuera del área de servicio', 'error', 4000);
+                    showToast('Location outside service area', 'error', 4000);
                     return;
                 }
 
-                // Ubicación válida
+                // Valid location
                 this.setUserLocation(coords);
 
-                // Cerrar popup y mostrar opciones de transporte
+                // Close popup and show transport options
                 document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
                 this.createRouteOptionsPopup(destination, destinationName);
 
             },
             (error) => {
                 console.error('Geolocation error:', error);
-                showToast('Error obteniendo ubicación. Elige un punto en el mapa.', 'error', 4000);
+                showToast('Error getting location. Choose a point on the map.', 'error', 4000);
 
-                // Cerrar popup y mostrar opción manual
+                // Close popup and show manual option
                 document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
                 this.enableStartPointSelection();
             },
@@ -344,46 +361,46 @@ class RoutingManager {
     }
 
     /**
-     * Calcular ruta usando Mapbox Directions API
+     * Calculate route using Mapbox Directions API
      */
     async calculateRoute(transportMode, destination, destinationName) {
         const startLocation = this.getStartLocation();
 
         if (!startLocation) {
-            showToast('Ubicación de inicio no disponible', 'error');
+            showToast('Start point not available', 'error');
             return;
         }
 
         const mode = this.transportModes[transportMode];
         if (!mode) {
-            showToast('Modo de transporte no válido', 'error');
+            showToast('Invalid transport mode', 'error');
             return;
         }
 
-        showToast('Calculando ruta...', 'info', 2000);
+        showToast('Calculating route...', 'info', 2000);
 
         try {
-            // Cerrar popups existentes
+            // Close existing popups
             const popups = document.querySelectorAll('.mapboxgl-popup');
             popups.forEach(popup => popup.remove());
 
             const start = startLocation;
             const end = destination;
 
-            // Llamada a Mapbox Directions API
+            // Call to Mapbox Directions API
             const response = await fetch(
                 `https://api.mapbox.com/directions/v5/mapbox/${mode.profile}/${start[0]},${start[1]};${end[0]},${end[1]}?` +
                 `geometries=geojson&access_token=${mapboxgl.accessToken}`
             );
 
             if (!response.ok) {
-                throw new Error(`Error en API: ${response.status}`);
+                throw new Error(`API Error: ${response.status}`);
             }
 
             const data = await response.json();
 
             if (!data.routes || data.routes.length === 0) {
-                throw new Error('No se encontró ruta');
+                throw new Error('No route found');
             }
 
             const route = data.routes[0];
@@ -391,32 +408,32 @@ class RoutingManager {
 
         } catch (error) {
             console.error('Error calculating route:', error);
-            showToast('Error al calcular la ruta. Intenta de nuevo.', 'error', 4000);
+            showToast('Error calculating route. Please try again.', 'error', 4000);
         }
     }
 
     /**
-     * Mostrar ruta en el mapa
+     * Display route on map
      */
     displayRoute(route, transportMode, start, end, destinationName) {
         this.currentRoute = route;
 
-        // Actualizar fuente de datos con la ruta
+        // Update data source with route
         this.map.getSource(this.routeSource).setData({
             type: 'Feature',
             properties: {},
             geometry: route.geometry
         });
 
-        // Actualizar color de la línea según transporte
+        // Update line color according to transport
         this.map.setPaintProperty(this.routeLayer, 'line-color', transportMode.color);
 
-        // Limpiar marcadores anteriores de destino
+        // Clear previous destination markers
         if (this.endMarker) {
             this.endMarker.remove();
         }
 
-        // Agregar marcador de inicio si no existe (manual o GPS)
+        // Add start marker if it doesn't exist (manual or GPS)
         if (!this.startMarker) {
             this.startMarker = new mapboxgl.Marker({
                 color: this.manualStartLocation ? '#007cbf' : '#28a745',
@@ -424,12 +441,12 @@ class RoutingManager {
             })
                 .setLngLat(start)
                 .setPopup(new mapboxgl.Popup().setHTML(
-                    `<strong>${this.manualStartLocation ? 'Punto de inicio' : 'Tu ubicación'}</strong>`
+                    `<strong>${this.manualStartLocation ? 'Start point' : 'Your location'}</strong>`
                 ))
                 .addTo(this.map);
         }
 
-        // Agregar marcador de destino
+        // Add destination marker
         this.endMarker = new mapboxgl.Marker({
             color: transportMode.color,
             scale: 0.9
@@ -438,7 +455,7 @@ class RoutingManager {
             .setPopup(new mapboxgl.Popup().setHTML(`<strong>${destinationName}</strong>`))
             .addTo(this.map);
 
-        // Ajustar vista para mostrar toda la ruta
+        // Adjust view to show entire route
         const coordinates = route.geometry.coordinates;
         const bounds = coordinates.reduce((bounds, coord) => {
             return bounds.extend(coord);
@@ -449,28 +466,28 @@ class RoutingManager {
             maxZoom: 15
         });
 
-        // 🆕 Mostrar información de la ruta (popup movible)
+        // Show route information (movable popup)
         this.showRouteInfo(route, transportMode, destinationName, start, end);
     }
 
     /**
-     * 🆕 Mostrar información de la ruta con popup movible
+     * Show route information with movable popup
      */
     showRouteInfo(route, transportMode, destinationName, start, end) {
-        const distanceInfo = this.formatDistance(route.distance); // 🆕 km y millas
+        const distanceInfo = this.formatDistance(route.distance); // km and miles
         const duration = Math.round(route.duration / 60);
 
-        // Calcular tiempo estimado según velocidad del transporte
+        // Calculate estimated time according to transport speed
         const estimatedTime = Math.round((parseFloat(distanceInfo.km) / transportMode.speed) * 60);
         const finalTime = Math.max(duration, estimatedTime);
 
-        // 🆕 Calcular posición del popup (lado opuesto al centro de la ruta para no cubrir)
+        // Calculate popup position (opposite side to route center to avoid covering)
         const routeCenter = [
             (start[0] + end[0]) / 2,
             (start[1] + end[1]) / 2
         ];
 
-        // Offset del popup para que no cubra la ruta
+        // Popup offset so it doesn't cover the route
         const mapCenter = this.map.getCenter();
         const offsetLng = routeCenter[0] < mapCenter.lng ? -0.01 : 0.01;
         const offsetLat = routeCenter[1] < mapCenter.lat ? -0.005 : 0.005;
@@ -497,7 +514,7 @@ class RoutingManager {
                     </div>
                     <div class="detail-item">
                         <i class="bi bi-clock"></i>
-                        <span><strong>${finalTime} min</strong> aprox.</span>
+                        <span><strong>${finalTime} min</strong> approx.</span>
                     </div>
                     <div class="detail-item">
                         <i class="bi bi-speedometer2"></i>
@@ -507,16 +524,16 @@ class RoutingManager {
                 
                 <div class="route-actions">
                     <button class="btn-route-action primary" onclick="window.routingManager.startNavigation()">
-                        <i class="bi bi-navigation"></i> Navegación
+                        <i class="bi bi-navigation"></i> Go
                     </button>
                     <button class="btn-route-action secondary" onclick="window.routingManager.clearRoute()">
-                        <i class="bi bi-x"></i> Limpiar
+                        <i class="bi bi-x"></i> Clear
                     </button>
                 </div>
             </div>
         `;
 
-        // 🆕 Popup movible con clase CSS especial
+        // Movable popup with special CSS class
         new mapboxgl.Popup({
             closeOnClick: false,
             closeButton: true,
@@ -527,15 +544,15 @@ class RoutingManager {
             .setHTML(infoHTML)
             .addTo(this.map);
 
-        showToast(`Ruta calculada: ${distanceInfo.display} en ~${finalTime} min`, 'success', 4000);
+        showToast(`Route calculated: ${distanceInfo.display} in ~${finalTime} min`, 'success', 4000);
     }
 
     /**
-     * Iniciar navegación (abre en Google Maps)
+     * Start navigation (opens in Google Maps)
      */
     startNavigation() {
         if (!this.currentRoute) {
-            showToast('No hay ruta activa', 'error');
+            showToast('No active route', 'error');
             return;
         }
 
@@ -544,24 +561,24 @@ class RoutingManager {
         const startLocation = this.getStartLocation();
 
         if (!startLocation) {
-            showToast('Punto de inicio no disponible', 'error');
+            showToast('Start point not available', 'error');
             return;
         }
 
-        // Crear URL para Google Maps
+        // Create URL for Google Maps
         const googleMapsUrl = `https://www.google.com/maps/dir/${startLocation[1]},${startLocation[0]}/${destination[1]},${destination[0]}`;
 
-        // Abrir en nueva ventana
+        // Open in new window
         window.open(googleMapsUrl, '_blank');
 
-        showToast('Abriendo navegación en Google Maps...', 'info', 3000);
+        showToast('Opening navigation in Google Maps...', 'info', 3000);
     }
 
     /**
-     * Limpiar ruta actual
+     * Clear current route
      */
     clearRoute() {
-        // Limpiar datos de ruta
+        // Clear route data
         if (this.map.getSource(this.routeSource)) {
             this.map.getSource(this.routeSource).setData({
                 type: 'FeatureCollection',
@@ -569,24 +586,24 @@ class RoutingManager {
             });
         }
 
-        // Limpiar todos los marcadores
+        // Clear all markers
         this.clearMarkers();
 
-        // Cerrar popups
+        // Close popups
         const popups = document.querySelectorAll('.mapboxgl-popup');
         popups.forEach(popup => popup.remove());
 
-        // 🆕 Limpiar ubicación manual también
+        // Clear manual location as well
         this.manualStartLocation = null;
         this.currentRoute = null;
         this.isSettingStartPoint = false;
         this.map.getCanvas().style.cursor = '';
 
-        showToast('Ruta eliminada', 'info', 2000);
+        showToast('Route deleted', 'info', 2000);
     }
 
     /**
-     * Limpiar marcadores
+     * Clear markers
      */
     clearMarkers() {
         if (this.startMarker) {
@@ -600,24 +617,24 @@ class RoutingManager {
     }
 
     /**
-     * Establecer ubicación del usuario (desde GPS)
+     * Set user location (from GPS)
      */
     setUserLocation(coords) {
         this.userLocation = coords;
         console.log('User location set for routing:', coords);
 
-        // Agregar marcador de ubicación GPS si no hay manual
+        // Add GPS location marker if no manual one exists
         if (!this.manualStartLocation && !this.startMarker) {
             this.startMarker = new mapboxgl.Marker({
                 color: '#28a745',
                 scale: 0.8
             })
                 .setLngLat(coords)
-                .setPopup(new mapboxgl.Popup().setHTML('<strong>Tu ubicación</strong>'))
+                .setPopup(new mapboxgl.Popup().setHTML('<strong>Your location</strong>'))
                 .addTo(this.map);
         }
 
-        // Mostrar información de rutas en sidebar
+        // Show routing info in sidebar
         const routingInfo = document.getElementById('routing-info');
         if (routingInfo) {
             routingInfo.style.display = 'block';
@@ -625,14 +642,14 @@ class RoutingManager {
     }
 
     /**
-     * Verificar si el usuario tiene ubicación (manual o GPS)
+     * Check if user has location (manual or GPS)
      */
     hasUserLocation() {
         return !!(this.userLocation || this.manualStartLocation);
     }
 
     /**
-     * Obtener información de la ruta actual
+     * Get current route information
      */
     getCurrentRouteInfo() {
         return this.currentRoute ? {
@@ -644,7 +661,7 @@ class RoutingManager {
     }
 
     /**
-     * 🆕 Obtener información del área de servicio
+     * Get service area information
      */
     getServiceAreaInfo() {
         return {
@@ -657,20 +674,25 @@ class RoutingManager {
     }
 
     /**
-     * 🆕 Actualizar área de servicio
+     * 🔧 FUNCIÓN CORREGIDA: Update service area (sin sobrescribir con valores incorrectos)
      */
     updateServiceArea(bounds) {
-        this.serviceArea = {
-            north: 24.5905196613355,
-            south: 24.544242791374604,
-            east: -81.73594411815554,
-            west: -81.8138529228222
-        };
-        console.log('Service area updated:', this.serviceArea);
+        // Solo actualizar si se pasan bounds válidos
+        if (bounds && typeof bounds === 'object') {
+            this.serviceArea = {
+                north: bounds.north || this.serviceArea.north,
+                south: bounds.south || this.serviceArea.south,
+                east: bounds.east || this.serviceArea.east,
+                west: bounds.west || this.serviceArea.west
+            };
+            console.log('✅ Service area updated:', this.serviceArea);
+        } else {
+            console.log('⚠️ updateServiceArea called without valid bounds, keeping current area:', this.serviceArea);
+        }
     }
 
     /**
-     * Destruir instancia (limpieza)
+     * Destroy instance (cleanup)
      */
     destroy() {
         this.clearRoute();
@@ -682,16 +704,16 @@ class RoutingManager {
             this.map.removeSource(this.routeSource);
         }
 
-        // Limpiar event listeners
+        // Clear event listeners
         this.map.off('click');
 
-        // Reset estado
+        // Reset state
         this.isSettingStartPoint = false;
         this.map.getCanvas().style.cursor = '';
     }
 }
 
-// Export para uso en módulos
+// Export for module use
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = RoutingManager;
 }

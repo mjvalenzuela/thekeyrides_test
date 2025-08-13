@@ -1,5 +1,5 @@
 // ===============================
-// UTILIDADES + UI (filtros/leyenda)
+// UTILITIES + UI (filters/legend)
 // ===============================
 const TEXTS = {
   filters: 'Filters',
@@ -14,16 +14,37 @@ const TEXTS = {
   phone: 'Phone',
   website: 'Website',
   map_controls: 'Map Controls',
-  search: 'Search'
+  search: 'Search',
+  // New English texts
+  location_found: 'Location found successfully',
+  searching: 'Searching',
+  enter_search: 'Enter something to search',
+  route_calculated: 'Route calculated',
+  start_point_set: 'Start point set',
+  click_to_set_start: 'Click on the map to set your start point',
+  loading_streetview: 'Loading Street View...',
+  streetview_loaded: 'Street View loaded successfully',
+  streetview_not_available: 'Street View not available at this location',
+  outside_service_area: 'Outside service area',
+  location_outside_area: 'Location outside service area',
+  choose_point_on_map: 'You can choose a start point in the map area',
+  error_getting_location: 'Error getting location. Choose a point on the map.',
+  calculating_route: 'Calculating route...',
+  opening_navigation: 'Opening navigation in Google Maps...',
+  route_deleted: 'Route deleted',
+  no_active_route: 'No active route',
+  start_point_not_available: 'Start point not available',
+  routing_not_available: 'Routing system not available',
+  error_applying_filter: 'Error applying filter'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
   applyEmbeddedStyles();
   setupSidebar();
-  generateUnifiedFilters();   // crea la "leyenda" con checkboxes
+  generateUnifiedFilters();   // creates the "legend" with checkboxes
 });
 
-// ---------- Leyenda/Filtros ----------
+// ---------- Legend/Filters ----------
 function generateUnifiedFilters() {
   const container = document.querySelector('.unified-filters-container');
   if (!container || !MAP_CONFIG?.categories) return;
@@ -48,7 +69,7 @@ function createUnifiedFilterElement(categoryKey, category) {
   const checkbox = div.querySelector('input');
   checkbox.addEventListener('change', (e) => unifiedFilterChanged(e, categoryKey, div));
 
-  // click en toda la fila
+  // click on the entire row
   div.addEventListener('click', (e) => { if (e.target !== checkbox) checkbox.click(); });
 
   return div;
@@ -59,12 +80,12 @@ function unifiedFilterChanged(e, categoryKey, container) {
     e.preventDefault(); e.stopPropagation();
     const enabled = e.target.checked;
     container.classList.toggle('active', enabled);
-    // llama a map.js
+    // calls map.js
     window.toggleCategoryFilter?.(categoryKey, enabled);
   } catch (err) {
     console.error('Filter error:', err);
     e.target.checked = !e.target.checked;
-    showToast('Error applying filter', 'error');
+    showToast(getText('error_applying_filter'), 'error');
   }
 }
 
@@ -139,7 +160,7 @@ function toggleLoading(show=true){
 function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
 function sanitizeText(s){ if (typeof s!=='string') return ''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-// Exponer utilidades que usa map.js
+// Expose utilities used by map.js
 window.getText = getText;
 window.showToast = showToast;
 window.toggleLoading = toggleLoading;
