@@ -151,8 +151,8 @@
 /* Botón toggle en el mapa */
 .streetview-toggle {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 60px;
     z-index: 1100;
     background: var(--btn-primary);
     color: var(--text-light);
@@ -233,7 +233,7 @@
 
     .streetview-toggle {
         top: 15px;
-        right: 15px;
+        right: 55px;
         width: 40px;
         height: 40px;
         font-size: 14px;

@@ -1,16 +1,17 @@
 // ===============================
-// MAPA SIN CLÚSTERES + MAKI SDF
+// MAPA CON SISTEMA DE RUTAS INTEGRADO
 // ===============================
 
 let map;
 let userLocation = null;
 let activeFilters = new Set(Object.keys(MAP_CONFIG.categories));
+let routingManager; // 🆕 Gestor de rutas
 
 /** Mapeo de categorías -> nombre de icono Maki (v7) */
 const MAKI_ICONS = {
   office: 'building',
   restaurant: 'cafe',
-  tourist: 'attraction', // alterna: 'landmark' o 'monument'
+  tourist: 'attraction',
   shop: 'shop',
   pickup: 'marker',
   route: 'arrow'
@@ -53,25 +54,38 @@ function initializeMap() {
 }
 
 async function handleMapLoad() {
- await loadMakiIcons();   
+  await loadMakiIcons();   
   setupSourceAndLayer();   
   await loadMapData();     
   setupInteractions();     
   
-  // 🆕 Cargar Street View después de que todo esté listo
+  // 🆕 Inicializar sistema de rutas
+  await initializeRoutingSystem();
+  
+  // Cargar Street View después de que todo esté listo
   await initializeStreetView();
   
   toggleLoading(false);
 }
 
+// 🆕 Inicializar sistema de rutas
+async function initializeRoutingSystem() {
+  try {
+    routingManager = new RoutingManager(map);
+    window.routingManager = routingManager; // Exposer globalmente
+    console.log('✅ Routing system initialized');
+  } catch (error) {
+    console.error('❌ Error initializing routing system:', error);
+    showToast('Sistema de rutas no disponible', 'error', 3000);
+  }
+}
+
 async function initializeStreetView() {
   try {
-    // Cargar Google Maps API si no está disponible
     if (typeof google === 'undefined') {
       await window.loadGoogleMapsAPI();
     }
 
-    // Solo inicializar si Google Maps se cargó correctamente
     if (typeof google !== 'undefined' && google.maps) {
       window.streetViewManager = new StreetViewManager(map);
       console.log('✅ Street View integration initialized');
@@ -80,7 +94,6 @@ async function initializeStreetView() {
     }
   } catch (error) {
     console.error('❌ Error initializing Street View:', error);
-    // No mostrar error al usuario, simplemente deshabilitar la funcionalidad
   }
 }
 
@@ -108,12 +121,9 @@ function doSearch(q) {
 }
 
 // ---------- Íconos MAKI (SDF propios) ----------
-/** Todos los iconos se registran como SDF con id "maki-<nombre>". */
 async function loadMakiIcons() {
-  // bajo demanda si falta un icono
   map.on('styleimagemissing', (e) => ensureMakiIcon(e.id));
 
-  // pre-carga los que usamos + default
   const needed = new Set([...Object.values(MAKI_ICONS), 'marker']);
   for (const name of needed) await ensureMakiIcon(`maki-${name}`);
 
@@ -121,7 +131,6 @@ async function loadMakiIcons() {
 }
 
 async function ensureMakiIcon(requestedId) {
-  // requestedId viene ya como "maki-<name>"
   if (map.hasImage(requestedId)) return;
   const name = requestedId.replace(/^maki-/, '');
   try {
@@ -147,6 +156,7 @@ async function ensureMakiIcon(requestedId) {
 // ---------- Fuente + Capa (sin clústeres) ----------
 function setupSourceAndLayer() {
   if (map.getLayer('points-layer')) map.removeLayer('points-layer');
+  if (map.getLayer('points-badge')) map.removeLayer('points-badge');
   if (map.getSource('points')) map.removeSource('points');
 
   map.addSource('points', {
@@ -154,7 +164,35 @@ function setupSourceAndLayer() {
     data: { type: 'FeatureCollection', features: [] }
   });
 
-  /*
+  // 1) Fondo tipo "badge" (círculo de color)
+  map.addLayer({
+    id: 'points-badge',
+    type: 'circle',
+    source: 'points',
+    paint: {
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        10, 10,
+        14, 14,
+        16, 18
+      ],
+      'circle-color': [
+        'match', ['get', 'category'],
+        'office',      MAP_CONFIG.categories.office?.color || '#238F9E',
+        'restaurant',  MAP_CONFIG.categories.restaurant?.color || '#41ACBB',
+        'tourist',     MAP_CONFIG.categories.tourist?.color || '#92DDE8',
+        'shop',        MAP_CONFIG.categories.shop?.color || '#65C6D4',
+        'pickup',      MAP_CONFIG.categories.pickup?.color || '#004494',
+        'route',       MAP_CONFIG.categories.route?.color || '#004494',
+        '#238F9E'
+      ],
+      'circle-opacity': 0.95,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 2
+    }
+  });
+
+  // 2) Pictograma blanco (SDF) encima del círculo
   map.addLayer({
     id: 'points-layer',
     type: 'symbol',
@@ -163,93 +201,27 @@ function setupSourceAndLayer() {
       'icon-image': getMakiIconExpression(),
       'icon-size': [
         'interpolate', ['linear'], ['zoom'],
-        10, 1.3,   // ajusta aquí si los quieres más grandes
-        14, 1.9,
-        16, 2.4
+        10, 0.9,
+        14, 1.1,
+        16, 1.3
       ],
       'icon-allow-overlap': true
     },
     paint: {
-      'icon-color': [
-        'match', ['get', 'category'],
-        'office',      MAP_CONFIG.categories.office?.color || '#238F9E',
-        'restaurant',  MAP_CONFIG.categories.restaurant?.color || '#41ACBB',
-        'tourist',     MAP_CONFIG.categories.tourist?.color || '#92DDE8',
-        'shop',        MAP_CONFIG.categories.shop?.color || '#65C6D4',
-        'pickup',      MAP_CONFIG.categories.pickup?.color || '#004494',
-        'route',       MAP_CONFIG.categories.route?.color || '#004494',
-        // default   '#238F9E'
-      ],
-      'icon-halo-color': '#ffffff',
-      'icon-halo-width': 2,
+      'icon-color': '#ffffff',
+      'icon-halo-color': 'rgba(0,0,0,0.15)',
+      'icon-halo-width': 0.5,
       'icon-opacity': 0.98
     }
   });
-  */
-// 1) Fondo tipo “badge” (círculo de color)
-map.addLayer({
-  id: 'points-badge',
-  type: 'circle',
-  source: 'points',
-  paint: {
-    // radio escalado por zoom (ajusta a tu gusto)
-    'circle-radius': [
-      'interpolate', ['linear'], ['zoom'],
-      10, 10,   // zoom 10 -> 10 px
-      14, 14,   // zoom 14 -> 14 px
-      16, 18    // zoom 16 -> 18 px
-    ],
-    // color por categoría (los mismos del MAP_CONFIG / leyenda)
-    'circle-color': [
-      'match', ['get', 'category'],
-      'office',      MAP_CONFIG.categories.office?.color || '#238F9E',
-      'restaurant',  MAP_CONFIG.categories.restaurant?.color || '#41ACBB',
-      'tourist',     MAP_CONFIG.categories.tourist?.color || '#92DDE8',
-      'shop',        MAP_CONFIG.categories.shop?.color || '#65C6D4',
-      'pickup',      MAP_CONFIG.categories.pickup?.color || '#004494',
-      'route',       MAP_CONFIG.categories.route?.color || '#004494',
-      /* default */  '#238F9E'
-    ],
-    'circle-opacity': 0.95,
-    'circle-stroke-color': '#ffffff',
-    'circle-stroke-width': 2
-  }
-});
-
-// 2) Pictograma blanco (SDF) encima del círculo
-map.addLayer({
-  id: 'points-layer',
-  type: 'symbol',
-  source: 'points',
-  layout: {
-    'icon-image': getMakiIconExpression(),
-    'icon-size': [
-      'interpolate', ['linear'], ['zoom'],
-      10, 0.9,   // el icono va más pequeño que el círculo
-      14, 1.1,
-      16, 1.3
-    ],
-    'icon-allow-overlap': true
-  },
-  paint: {
-    'icon-color': '#ffffff',       // pictograma blanco para que calce con la leyenda
-    'icon-halo-color': 'rgba(0,0,0,0.15)',
-    'icon-halo-width': 0.5,
-    'icon-opacity': 0.98
-  }
-});
-
-
-
 }
 
 function getMakiIconExpression() {
-  // usamos SIEMPRE ids con prefijo "maki-"
   const expr = ['case'];
   Object.entries(MAKI_ICONS).forEach(([cat, name]) => {
     expr.push(['==', ['get', 'category'], cat], `maki-${name}`);
   });
-  expr.push('maki-marker'); // default
+  expr.push('maki-marker');
   return expr;
 }
 
@@ -267,20 +239,28 @@ function setupInteractions() {
   });
 }
 
+// 🆕 Popup actualizado con botón "Cómo llegar"
 function showPointPopup(feature, lngLat) {
-    const p = feature.properties || {};
+  const p = feature.properties || {};
   const cat = MAP_CONFIG.categories[p.category];
   const catName = cat ? (cat.name_en || cat.name_es) : 'Unknown';
   const title = p.nombre_en || p.nombre_es || p.name || 'Unnamed Point';
   const color = cat?.color || '#000';
   const coordinates = feature.geometry.coordinates;
 
-  // 🆕 Agregar botón Street View si está disponible
+  // Botón Street View si está disponible
   const streetViewBtn = window.streetViewManager ? 
     `<button class="popup-streetview-btn" onclick="window.streetViewManager.loadStreetView(${coordinates[1]}, ${coordinates[0]}, '${sanitizeText(title)}')">
        <i class="bi bi-camera"></i>
        Ver en Street View
      </button>` : '';
+
+  // 🆕 Botón "Cómo llegar" - siempre visible
+  const routeBtn = `
+    <button class="popup-route-btn" onclick="window.routingManager?.createRouteOptionsPopup([${coordinates[0]}, ${coordinates[1]}], '${sanitizeText(title)}')">
+      <i class="bi bi-geo-alt"></i>
+      Cómo llegar
+    </button>`;
 
   const html = `
     <div class="popup-content">
@@ -293,6 +273,7 @@ function showPointPopup(feature, lngLat) {
         ${p.horario ? `<p class="popup-detail"><strong>Schedule:</strong> ${sanitizeText(p.horario)}</p>` : ''}
         ${p.telefono ? `<p class="popup-detail"><strong>Phone:</strong> ${sanitizeText(p.telefono)}</p>` : ''}
         ${p.website ? `<p class="popup-website"><a href="${sanitizeText(p.website)}" target="_blank" rel="noopener">Website</a></p>` : ''}
+        ${routeBtn}
         ${streetViewBtn}
       </div>
     </div>`;
@@ -310,7 +291,6 @@ async function loadMapData() {
 
     map.getSource('points').setData(data);
 
-    // mostrar todas por defecto
     activeFilters = new Set(Object.keys(MAP_CONFIG.categories));
     updateCategoryFiltersFromData(data);
     applyFilters();
@@ -332,7 +312,6 @@ function updateCategoryFiltersFromData(geojson) {
   const present = new Set();
   geojson.features.forEach(f => { if (f.properties?.category) present.add(f.properties.category); });
 
-  // esconder categorías sin datos
   Object.keys(MAP_CONFIG.categories).forEach(k => {
     const el = document.querySelector(`#filter-${k}`);
     const box = el?.closest('.unified-filter-item');
@@ -349,25 +328,6 @@ function toggleCategoryFilter(category, enabled) {
   if (enabled) activeFilters.add(category); else activeFilters.delete(category);
   applyFilters();
 }
-
-/*
-function applyFilters() {
-  const L = 'points-layer';
-  if (!map.getLayer(L)) return;
-
-  if (activeFilters.size === 0) {
-    map.setLayoutProperty(L, 'visibility', 'none');
-    return;
-  }
-  map.setLayoutProperty(L, 'visibility', 'visible');
-
-  if (activeFilters.size === Object.keys(MAP_CONFIG.categories).length) {
-    map.setFilter(L, true);
-    return;
-  }
-  const checks = Array.from(activeFilters).map(c => ['==', ['get', 'category'], c]);
-  map.setFilter(L, ['any', ...checks]);
-}*/
 
 function applyFilters() {
   const layers = ['points-badge', 'points-layer'];
@@ -391,8 +351,7 @@ function applyFilters() {
   });
 }
 
-
-// ---------- Geolocalización ----------
+// ---------- Geolocalización ACTUALIZADA ----------
 function requestUserLocation() {
   if (!navigator.geolocation) return showToast('Geolocation not supported', 'error');
   const btn = document.getElementById('locate-btn');
@@ -403,31 +362,50 @@ function requestUserLocation() {
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
   );
 }
+
+// 🆕 Actualizada para sincronizar con sistema de rutas (incluyendo ubicaciones manuales)
 function onLocationOK(position, btn) {
   const coords = [position.coords.longitude, position.coords.latitude];
   userLocation = coords;
+  
+  // 🆕 Sincronizar con sistema de rutas
+  if (routingManager) {
+    routingManager.setUserLocation(coords);
+  }
+  
   map.flyTo({ center: coords, zoom: 16, duration: 1500 });
   addUserLocationMarker(coords);
   setLocateBtn(btn, false);
-  showToast('Location found successfully', 'success', 2000);
+  showToast('Ubicación encontrada correctamente', 'success', 2000);
 }
+
 function onLocationErr(err, btn) {
   console.error('Geolocation error:', err);
   showToast(getText('error_location'), 'error');
   setLocateBtn(btn, false);
 }
+
 function setLocateBtn(button, busy) {
   if (!button) return;
   button.classList.toggle('active', !!busy);
   button.innerHTML = busy ? '<i class="bi bi-arrow-repeat spinner-border spinner-border-sm"></i>' : '<i class="bi bi-geo-alt"></i>';
 }
+
 function addUserLocationMarker(coords) {
-  // limpia anteriores
-  if (map.getSource('user-location')) { map.removeLayer('user-location-layer'); map.removeSource('user-location'); }
+  if (map.getSource('user-location')) { 
+    map.removeLayer('user-location-layer'); 
+    map.removeSource('user-location'); 
+  }
 
   map.addSource('user-location', {
     type: 'geojson',
-    data: { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: coords } }] }
+    data: { 
+      type: 'FeatureCollection', 
+      features: [{ 
+        type: 'Feature', 
+        geometry: { type: 'Point', coordinates: coords } 
+      }] 
+    }
   });
 
   map.addLayer({
@@ -451,8 +429,19 @@ function validateConfiguration() {
   if (typeof mapboxgl === 'undefined') throw new Error('Mapbox GL not loaded');
 }
 
-// Exponer para utils/checkbox
+// 🆕 Funciones auxiliares para el sistema de rutas
+function getUserLocation() {
+  return userLocation;
+}
+
+function hasUserLocation() {
+  return !!userLocation;
+}
+
+// Exponer funciones globales
 window.toggleCategoryFilter = toggleCategoryFilter;
 window.toggleSidebar = toggleSidebar;
 window.showSidebar = showSidebar;
 window.hideSidebar = hideSidebar;
+window.getUserLocation = getUserLocation;
+window.hasUserLocation = hasUserLocation;

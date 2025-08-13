@@ -56,6 +56,15 @@
                     </div>
                 </div>
 
+                <!-- 🆕 Información del sistema de rutas -->
+                <div class="control-group" id="routing-info" style="display: none;">
+                    <h6>🚗 Navigation</h6>
+                    <div class="alert alert-info" style="font-size: 12px; padding: 8px 12px; margin-bottom: 0;">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Tip:</strong> Click on any point and select "Cómo llegar" to get directions with different transport options.
+                    </div>
+                </div>
+
             </div>
         </aside>
 
@@ -90,11 +99,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Map scripts -->
-    <!--  <script src="https://maps.googleapis.com/maps/api/js?key=${MAP_TOKENS.google}&libraries=geometry"></script>-->
     <script src="config/config.js"></script>
     <script src="js/dataService.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/streetView.js"></script>
+    <!-- 🆕 Nuevo script del sistema de rutas -->
+    <script src="js/routing.js"></script>
     <script src="js/map.js"></script>
 
 </body>
