@@ -252,14 +252,14 @@ function showPointPopup(feature, lngLat) {
   const streetViewBtn = window.streetViewManager ? 
     `<button class="popup-streetview-btn" onclick="window.streetViewManager.loadStreetView(${coordinates[1]}, ${coordinates[0]}, '${sanitizeText(title)}')">
        <i class="bi bi-camera"></i>
-       Ver en Street View
+       See
      </button>` : '';
 
   // 🆕 Botón "Cómo llegar" - siempre visible
   const routeBtn = `
     <button class="popup-route-btn" onclick="window.routingManager?.createRouteOptionsPopup([${coordinates[0]}, ${coordinates[1]}], '${sanitizeText(title)}')">
       <i class="bi bi-geo-alt"></i>
-      Cómo llegar
+      Go
     </button>`;
 
   const html = `

@@ -40,10 +40,10 @@ class StreetViewManager {
                 
                 <div class="streetview-controls">
                     <button class="btn-streetview" onclick="window.streetViewManager?.centerStreetView()">
-                        <i class="bi bi-crosshair"></i> Centrar
+                        <i class="bi bi-crosshair"></i> Center
                     </button>
                     <button class="btn-streetview secondary" onclick="window.streetViewManager?.closePanel()">
-                        <i class="bi bi-x"></i> Cerrar
+                        <i class="bi bi-x"></i> Close
                     </button>
                 </div>
             </div>
@@ -264,7 +264,7 @@ class StreetViewManager {
         const lat = position.lat().toFixed(6);
         const lng = position.lng().toFixed(6);
         
-        let infoText = `Coordenadas: ${lat}, ${lng}`;
+        let infoText = `Coordinates: ${lat}, ${lng}`;
         if (locationName) {
             infoText = `${locationName} - ${lat}, ${lng}`;
         }
