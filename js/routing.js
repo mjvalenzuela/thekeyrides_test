@@ -1,5 +1,5 @@
 /**
- * ROUTING SYSTEM FOR MAPBOX
+ * ROUTING SYSTEM FOR MAPBOX - FIXED GOOGLE MAPS NAVIGATION
  * Integrates routes from user location to map points
  * Includes different transport modes with times and distances
  * Supports GPS location and manual start point selection
@@ -17,12 +17,12 @@ class RoutingManager {
         this.endMarker = null;
         this.isSettingStartPoint = false; // State for placing start point
 
-        // 🔧 ÁREA DE SERVICIO CORREGIDA PARA KEY WEST, FLORIDA
+        // Service area configuration for Key West, Florida
         this.serviceArea = {
-            north: 25.0905196613355,      // Norte de Key West
-            south: 24.044242791374604,    // Sur de Key West  
-            east: -81.63594411815554,     // Este de Key West
-            west: -81.9138529228222       // Oeste de Key West
+            north: 25.0905196613355,      
+            south: 24.044242791374604,    
+            east: -81.63594411815554,     
+            west: -81.9138529228222       
         };
 
         // Transport modes configuration
@@ -58,14 +58,12 @@ class RoutingManager {
         };
 
         this.init();
-        
-        // 🔧 LOG PARA DEBUGGING
         console.log('🌎 Service Area configured:', this.serviceArea);
     }
 
     init() {
         this.setupRouteLayers();
-        this.setupMapClickHandler(); // Handler for placing start point
+        this.setupMapClickHandler();
         console.log('✅ Routing system initialized');
     }
 
@@ -85,7 +83,7 @@ class RoutingManager {
     }
 
     /**
-     * 🔧 FUNCIÓN CORREGIDA: Check if location is within service area
+     * Check if location is within service area
      */
     isLocationInServiceArea(lat, lng) {
         const inArea = lat >= this.serviceArea.south &&
@@ -93,15 +91,10 @@ class RoutingManager {
             lng >= this.serviceArea.west &&
             lng <= this.serviceArea.east;
             
-        // 🔧 LOG PARA DEBUGGING
         console.log('🌍 Location check:', {
             coordinates: { lat, lng },
             serviceArea: this.serviceArea,
-            inArea: inArea,
-            checks: {
-                latOK: `${lat} >= ${this.serviceArea.south} && ${lat} <= ${this.serviceArea.north}`,
-                lngOK: `${lng} >= ${this.serviceArea.west} && ${lng} <= ${this.serviceArea.east}`
-            }
+            inArea: inArea
         });
         
         return inArea;
@@ -113,12 +106,10 @@ class RoutingManager {
     setManualStartLocation(coords) {
         this.manualStartLocation = coords;
 
-        // Clear previous start marker
         if (this.startMarker) {
             this.startMarker.remove();
         }
 
-        // Add manual start marker
         this.startMarker = new mapboxgl.Marker({
             color: '#007cbf',
             scale: 0.9
@@ -135,7 +126,6 @@ class RoutingManager {
         this.isSettingStartPoint = true;
         this.map.getCanvas().style.cursor = 'crosshair';
 
-        // Close existing popups
         const popups = document.querySelectorAll('.mapboxgl-popup');
         popups.forEach(popup => popup.remove());
 
@@ -166,7 +156,6 @@ class RoutingManager {
      * Setup layers to display routes
      */
     setupRouteLayers() {
-        // Clear existing layers
         if (this.map.getLayer(this.routeLayer)) {
             this.map.removeLayer(this.routeLayer);
         }
@@ -174,7 +163,6 @@ class RoutingManager {
             this.map.removeSource(this.routeSource);
         }
 
-        // Add route source
         this.map.addSource(this.routeSource, {
             type: 'geojson',
             data: {
@@ -183,7 +171,6 @@ class RoutingManager {
             }
         });
 
-        // Add layer to display route
         this.map.addLayer({
             id: this.routeLayer,
             type: 'line',
@@ -207,7 +194,6 @@ class RoutingManager {
         const startLocation = this.getStartLocation();
 
         if (!startLocation) {
-            // Show options when no location available
             const noLocationHTML = `
                 <div class="route-options-popup">
                     <div class="route-header">
@@ -241,7 +227,6 @@ class RoutingManager {
             return;
         }
 
-        // Normal popup with transport options
         const transportButtons = Object.entries(this.transportModes)
             .map(([key, mode]) => `
                 <button class="transport-option" 
@@ -278,7 +263,7 @@ class RoutingManager {
     }
 
     /**
-     * 🔧 FUNCIÓN CORREGIDA: Request user location with area validation
+     * Request user location with area validation
      */
     async requestUserLocation(destinationName, destination) {
         if (!navigator.geolocation) {
@@ -298,7 +283,6 @@ class RoutingManager {
                     accuracy: position.coords.accuracy + ' meters'
                 });
 
-                // 🔧 Check if within service area with detailed logging
                 const isInArea = this.isLocationInServiceArea(coords[1], coords[0]);
                 
                 if (!isInArea) {
@@ -324,7 +308,6 @@ class RoutingManager {
                         </div>
                     `;
 
-                    // Close previous popup and show new one
                     document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
 
                     new mapboxgl.Popup({
@@ -340,10 +323,7 @@ class RoutingManager {
                     return;
                 }
 
-                // Valid location
                 this.setUserLocation(coords);
-
-                // Close popup and show transport options
                 document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
                 this.createRouteOptionsPopup(destination, destinationName);
 
@@ -352,7 +332,6 @@ class RoutingManager {
                 console.error('Geolocation error:', error);
                 showToast('Error getting location. Choose a point on the map.', 'error', 4000);
 
-                // Close popup and show manual option
                 document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
                 this.enableStartPointSelection();
             },
@@ -380,14 +359,12 @@ class RoutingManager {
         showToast('Calculating route...', 'info', 2000);
 
         try {
-            // Close existing popups
             const popups = document.querySelectorAll('.mapboxgl-popup');
             popups.forEach(popup => popup.remove());
 
             const start = startLocation;
             const end = destination;
 
-            // Call to Mapbox Directions API
             const response = await fetch(
                 `https://api.mapbox.com/directions/v5/mapbox/${mode.profile}/${start[0]},${start[1]};${end[0]},${end[1]}?` +
                 `geometries=geojson&access_token=${mapboxgl.accessToken}`
@@ -418,22 +395,18 @@ class RoutingManager {
     displayRoute(route, transportMode, start, end, destinationName) {
         this.currentRoute = route;
 
-        // Update data source with route
         this.map.getSource(this.routeSource).setData({
             type: 'Feature',
             properties: {},
             geometry: route.geometry
         });
 
-        // Update line color according to transport
         this.map.setPaintProperty(this.routeLayer, 'line-color', transportMode.color);
 
-        // Clear previous destination markers
         if (this.endMarker) {
             this.endMarker.remove();
         }
 
-        // Add start marker if it doesn't exist (manual or GPS)
         if (!this.startMarker) {
             this.startMarker = new mapboxgl.Marker({
                 color: this.manualStartLocation ? '#007cbf' : '#28a745',
@@ -446,7 +419,6 @@ class RoutingManager {
                 .addTo(this.map);
         }
 
-        // Add destination marker
         this.endMarker = new mapboxgl.Marker({
             color: transportMode.color,
             scale: 0.9
@@ -455,7 +427,6 @@ class RoutingManager {
             .setPopup(new mapboxgl.Popup().setHTML(`<strong>${destinationName}</strong>`))
             .addTo(this.map);
 
-        // Adjust view to show entire route
         const coordinates = route.geometry.coordinates;
         const bounds = coordinates.reduce((bounds, coord) => {
             return bounds.extend(coord);
@@ -466,7 +437,6 @@ class RoutingManager {
             maxZoom: 15
         });
 
-        // Show route information (movable popup)
         this.showRouteInfo(route, transportMode, destinationName, start, end);
     }
 
@@ -474,20 +444,17 @@ class RoutingManager {
      * Show route information with movable popup
      */
     showRouteInfo(route, transportMode, destinationName, start, end) {
-        const distanceInfo = this.formatDistance(route.distance); // km and miles
+        const distanceInfo = this.formatDistance(route.distance);
         const duration = Math.round(route.duration / 60);
 
-        // Calculate estimated time according to transport speed
         const estimatedTime = Math.round((parseFloat(distanceInfo.km) / transportMode.speed) * 60);
         const finalTime = Math.max(duration, estimatedTime);
 
-        // Calculate popup position (opposite side to route center to avoid covering)
         const routeCenter = [
             (start[0] + end[0]) / 2,
             (start[1] + end[1]) / 2
         ];
 
-        // Popup offset so it doesn't cover the route
         const mapCenter = this.map.getCenter();
         const offsetLng = routeCenter[0] < mapCenter.lng ? -0.01 : 0.01;
         const offsetLat = routeCenter[1] < mapCenter.lat ? -0.005 : 0.005;
@@ -524,7 +491,7 @@ class RoutingManager {
                 
                 <div class="route-actions">
                     <button class="btn-route-action primary" onclick="window.routingManager.startNavigation()">
-                        <i class="bi bi-navigation"></i> Go
+                        <i class="bi bi-navigation"></i> Navigation
                     </button>
                     <button class="btn-route-action secondary" onclick="window.routingManager.clearRoute()">
                         <i class="bi bi-x"></i> Clear
@@ -533,7 +500,6 @@ class RoutingManager {
             </div>
         `;
 
-        // Movable popup with special CSS class
         new mapboxgl.Popup({
             closeOnClick: false,
             closeButton: true,
@@ -548,7 +514,7 @@ class RoutingManager {
     }
 
     /**
-     * Start navigation (opens in Google Maps)
+     * 🔧 FIXED: Start navigation with proper Google Maps URLs
      */
     startNavigation() {
         if (!this.currentRoute) {
@@ -565,20 +531,135 @@ class RoutingManager {
             return;
         }
 
-        // Create URL for Google Maps
-        const googleMapsUrl = `https://www.google.com/maps/dir/${startLocation[1]},${startLocation[0]}/${destination[1]},${destination[0]}`;
+        // 🔧 MÚLTIPLES OPCIONES DE URL PARA MEJOR COMPATIBILIDAD
+        const urls = this.generateGoogleMapsUrls(startLocation, destination);
+        
+        // Intentar abrir con diferentes métodos
+        this.tryOpenNavigation(urls);
+    }
 
-        // Open in new window
-        window.open(googleMapsUrl, '_blank');
+    /**
+     * 🔧 NEW: Generate multiple Google Maps URL formats for better compatibility
+     */
+    generateGoogleMapsUrls(start, end) {
+        const startCoords = `${start[1]},${start[0]}`;
+        const endCoords = `${end[1]},${end[0]}`;
+        
+        return {
+            // 1. URL de navegación directa (más probable que funcione)
+            navigation: `https://www.google.com/maps/dir/?api=1&origin=${startCoords}&destination=${endCoords}&travelmode=driving`,
+            
+            // 2. URL de Google Maps app (móvil)
+            app: `comgooglemaps://?saddr=${startCoords}&daddr=${endCoords}&directionsmode=driving`,
+            
+            // 3. URL universal de Google Maps
+            universal: `https://maps.google.com/?saddr=${startCoords}&daddr=${endCoords}&dirflg=d`,
+            
+            // 4. URL de navegación con parámetros adicionales
+            enhanced: `https://www.google.com/maps/dir/${startCoords}/${endCoords}/@${endCoords},12z/data=!3m1!4b1!4m2!4m1!3e0`,
+            
+            // 5. URL simple de direcciones
+            simple: `https://www.google.com/maps/dir/${startCoords}/${endCoords}`
+        };
+    }
 
-        showToast('Opening navigation in Google Maps...', 'info', 3000);
+    /**
+     * 🔧 NEW: Try opening navigation with multiple fallback methods
+     */
+    tryOpenNavigation(urls) {
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+
+        console.log('🗺️ Opening navigation:', { isMobile, isIOS, isAndroid });
+
+        if (isMobile) {
+            if (isIOS) {
+                this.openNavigationIOS(urls);
+            } else if (isAndroid) {
+                this.openNavigationAndroid(urls);
+            } else {
+                this.openNavigationGeneric(urls);
+            }
+        } else {
+            // Desktop/tablet
+            this.openNavigationDesktop(urls);
+        }
+    }
+
+    /**
+     * 🔧 NEW: iOS-specific navigation opening
+     */
+    openNavigationIOS(urls) {
+        // Intentar abrir Google Maps app primero
+        const googleMapsApp = `comgooglemaps://?saddr=${this.getStartLocation()[1]},${this.getStartLocation()[0]}&daddr=${this.currentRoute.geometry.coordinates[this.currentRoute.geometry.coordinates.length - 1][1]},${this.currentRoute.geometry.coordinates[this.currentRoute.geometry.coordinates.length - 1][0]}&directionsmode=driving`;
+        
+        // Crear enlace temporal para intentar abrir la app
+        const tempLink = document.createElement('a');
+        tempLink.href = googleMapsApp;
+        tempLink.style.display = 'none';
+        document.body.appendChild(tempLink);
+        
+        // Intentar abrir la app
+        tempLink.click();
+        
+        // Fallback a navegador después de un pequeño delay
+        setTimeout(() => {
+            window.open(urls.navigation, '_blank');
+            document.body.removeChild(tempLink);
+        }, 500);
+        
+        showToast('Opening Google Maps...', 'info', 3000);
+    }
+
+    /**
+     * 🔧 NEW: Android-specific navigation opening
+     */
+    openNavigationAndroid(urls) {
+        // Android: intentar intent de Google Maps primero
+        const intent = `intent://maps.google.com/maps?saddr=${this.getStartLocation()[1]},${this.getStartLocation()[0]}&daddr=${this.currentRoute.geometry.coordinates[this.currentRoute.geometry.coordinates.length - 1][1]},${this.currentRoute.geometry.coordinates[this.currentRoute.geometry.coordinates.length - 1][0]}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+        
+        try {
+            window.location.href = intent;
+        } catch (e) {
+            // Fallback a navegador
+            window.open(urls.navigation, '_blank');
+        }
+        
+        showToast('Opening Google Maps...', 'info', 3000);
+    }
+
+    /**
+     * 🔧 NEW: Generic mobile navigation opening
+     */
+    openNavigationGeneric(urls) {
+        // Intentar múltiples URLs en orden
+        const urlsToTry = [urls.navigation, urls.universal, urls.simple];
+        
+        urlsToTry.forEach((url, index) => {
+            setTimeout(() => {
+                if (index === 0) {
+                    window.open(url, '_blank');
+                }
+            }, index * 100);
+        });
+        
+        showToast('Opening navigation...', 'info', 3000);
+    }
+
+    /**
+     * 🔧 NEW: Desktop navigation opening
+     */
+    openNavigationDesktop(urls) {
+        // En desktop, usar la URL de navegación más robusta
+        window.open(urls.navigation, '_blank');
+        showToast('Opening Google Maps in new tab...', 'info', 3000);
     }
 
     /**
      * Clear current route
      */
     clearRoute() {
-        // Clear route data
         if (this.map.getSource(this.routeSource)) {
             this.map.getSource(this.routeSource).setData({
                 type: 'FeatureCollection',
@@ -586,14 +667,11 @@ class RoutingManager {
             });
         }
 
-        // Clear all markers
         this.clearMarkers();
 
-        // Close popups
         const popups = document.querySelectorAll('.mapboxgl-popup');
         popups.forEach(popup => popup.remove());
 
-        // Clear manual location as well
         this.manualStartLocation = null;
         this.currentRoute = null;
         this.isSettingStartPoint = false;
@@ -623,7 +701,6 @@ class RoutingManager {
         this.userLocation = coords;
         console.log('User location set for routing:', coords);
 
-        // Add GPS location marker if no manual one exists
         if (!this.manualStartLocation && !this.startMarker) {
             this.startMarker = new mapboxgl.Marker({
                 color: '#28a745',
@@ -634,7 +711,6 @@ class RoutingManager {
                 .addTo(this.map);
         }
 
-        // Show routing info in sidebar
         const routingInfo = document.getElementById('routing-info');
         if (routingInfo) {
             routingInfo.style.display = 'block';
@@ -674,10 +750,9 @@ class RoutingManager {
     }
 
     /**
-     * 🔧 FUNCIÓN CORREGIDA: Update service area (sin sobrescribir con valores incorrectos)
+     * Update service area
      */
     updateServiceArea(bounds) {
-        // Solo actualizar si se pasan bounds válidos
         if (bounds && typeof bounds === 'object') {
             this.serviceArea = {
                 north: bounds.north || this.serviceArea.north,
@@ -704,10 +779,8 @@ class RoutingManager {
             this.map.removeSource(this.routeSource);
         }
 
-        // Clear event listeners
         this.map.off('click');
 
-        // Reset state
         this.isSettingStartPoint = false;
         this.map.getCanvas().style.cursor = '';
     }
