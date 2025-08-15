@@ -512,11 +512,11 @@ class RoutingManager {
                         <i class="bi bi-google" style="color: #4285f4;"></i>
                         <div class="nav-option-content">
                             <span>Google Maps</span>
-                            <small>Most popular</small>
+                            <small>Browser version</small>
                         </div>
                     </button>
                     
-                    <button class="nav-option" onclick="window.routingManager.openUrl('${urls.googleMapsApp}')">
+                    <button class="nav-option" onclick="window.routingManager.tryGoogleMapsApp('${startLocation[1]}', '${startLocation[0]}', '${destination[1]}', '${destination[0]}')">
                         <i class="bi bi-phone" style="color: #34a853;"></i>
                         <div class="nav-option-content">
                             <span>Google Maps App</span>
@@ -532,11 +532,19 @@ class RoutingManager {
                         </div>
                     </button>
                     
-                    <button class="nav-option" onclick="window.routingManager.openUrl('${urls.waze}')">
+                    <button class="nav-option" onclick="window.routingManager.tryWaze('${destination[1]}', '${destination[0]}', '${startLocation[1]}', '${startLocation[0]}')">
                         <i class="bi bi-car-front" style="color: #33ccff;"></i>
                         <div class="nav-option-content">
                             <span>Waze</span>
                             <small>Traffic alerts</small>
+                        </div>
+                    </button>
+                    
+                    <button class="nav-option" onclick="window.routingManager.openUrl('${urls.here}')">
+                        <i class="bi bi-map" style="color: #48dad0;"></i>
+                        <div class="nav-option-content">
+                            <span>HERE Maps</span>
+                            <small>Alternative</small>
                         </div>
                     </button>
                     
@@ -550,7 +558,7 @@ class RoutingManager {
                 </div>
                 
                 <div class="nav-info">
-                    <small><i class="bi bi-info-circle"></i> If one doesn't work, try another option</small>
+                    <small><i class="bi bi-info-circle"></i> Try different options if one doesn't work</small>
                 </div>
             </div>
         `;
@@ -570,30 +578,42 @@ class RoutingManager {
     }
 
     /**
-     * 🔧 NEW: Generate all possible navigation URLs
+     * 🔧 FIXED: Generate all possible navigation URLs with better formatting
      */
     generateAllNavigationUrls(start, end) {
-        const startCoords = `${start[1]},${start[0]}`;
-        const endCoords = `${end[1]},${end[0]}`;
+        const startLat = start[1];
+        const startLng = start[0];
+        const endLat = end[1];
+        const endLng = end[0];
+        
+        // Formatear coordenadas para mayor compatibilidad
+        const startCoords = `${startLat},${startLng}`;
+        const endCoords = `${endLat},${endLng}`;
         
         return {
-            // Google Maps (navegador)
-            googleMaps: `https://www.google.com/maps/dir/?api=1&origin=${startCoords}&destination=${endCoords}&travelmode=driving`,
+            // 🔧 Google Maps (navegador) - Formato que fuerza navegación
+            googleMaps: `https://www.google.com/maps/dir/?api=1&origin=${startCoords}&destination=${endCoords}&travelmode=driving&dir_action=navigate`,
             
-            // Google Maps (app móvil)
-            googleMapsApp: `https://maps.google.com/maps?saddr=${startCoords}&daddr=${endCoords}&dirflg=d`,
+            // 🔧 Google Maps (app móvil) - URL que intenta forzar navegación
+            googleMapsApp: `https://maps.google.com/?saddr=${startCoords}&daddr=${endCoords}&dirflg=d&nav=1`,
             
-            // Apple Maps
+            // 🔧 Google Maps (intent Android)
+            googleMapsIntent: `geo:${endCoords}?q=${endCoords}&mode=d&origin=${startCoords}`,
+            
+            // 🔧 Apple Maps 
             appleMaps: `https://maps.apple.com/?saddr=${startCoords}&daddr=${endCoords}&dirflg=d`,
             
-            // Waze
-            waze: `https://waze.com/ul?ll=${endCoords}&navigate=yes&from=${startCoords}`,
+            // 🔧 Waze (formato corregido)
+            waze: `https://waze.com/ul?ll=${endLat}%2C${endLng}&navigate=yes`,
             
-            // OpenStreetMap
-            osmand: `osmand://routing?start=${startCoords}&destination=${endCoords}&mode=car`,
+            // 🔧 Waze (formato alternativo)
+            wazeAlt: `https://www.waze.com/es/live-map/directions?to=ll.${endLat}%2C${endLng}&from=ll.${startLat}%2C${startLng}`,
             
-            // HERE Maps
-            here: `https://wego.here.com/directions/drive/${startCoords}/${endCoords}`
+            // 🔧 HERE Maps
+            here: `https://wego.here.com/directions/drive/${startCoords}/${endCoords}`,
+            
+            // 🔧 OpenStreetMap
+            osm: `https://www.openstreetmap.org/directions?engine=graphhopper_car&route=${startLat}%2C${startLng}%3B${endLat}%2C${endLng}`
         };
     }
 
@@ -658,8 +678,121 @@ class RoutingManager {
     }
 
     /**
-     * Fallback method for copying coordinates
+     * 🔧 NEW: Try Google Maps app with multiple fallback methods
      */
+    tryGoogleMapsApp(startLat, startLng, endLat, endLng) {
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        
+        console.log('🗺️ Trying Google Maps app:', { isMobile, isAndroid, isIOS });
+        
+        if (isAndroid) {
+            // Android: Múltiples intentos
+            const androidUrls = [
+                // Intent para navegación directa
+                `intent://navigation?destination=${endLat},${endLng}&mode=d#Intent;scheme=google.navigation;package=com.google.android.apps.maps;end`,
+                
+                // Intent para direcciones
+                `intent://maps.google.com/maps?daddr=${endLat},${endLng}&saddr=${startLat},${startLng}&dirflg=d#Intent;scheme=https;package=com.google.android.apps.maps;end`,
+                
+                // Geo URI
+                `geo:${endLat},${endLng}?q=${endLat},${endLng}&mode=d`,
+                
+                // Fallback a navegador
+                `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${endLat},${endLng}&travelmode=driving&dir_action=navigate`
+            ];
+            
+            this.tryMultipleUrls(androidUrls, 'Google Maps app (Android)');
+            
+        } else if (isIOS) {
+            // iOS: Múltiples intentos
+            const iosUrls = [
+                // Esquema URL de Google Maps
+                `comgooglemaps://?saddr=${startLat},${startLng}&daddr=${endLat},${endLng}&directionsmode=driving`,
+                
+                // URL universal
+                `https://maps.google.com/?saddr=${startLat},${startLng}&daddr=${endLat},${endLng}&dirflg=d`,
+                
+                // Fallback a navegador
+                `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${endLat},${endLng}&travelmode=driving&dir_action=navigate`
+            ];
+            
+            this.tryMultipleUrls(iosUrls, 'Google Maps app (iOS)');
+            
+        } else {
+            // Desktop/otros: Solo navegador
+            const desktopUrl = `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${endLat},${endLng}&travelmode=driving&dir_action=navigate`;
+            this.openUrl(desktopUrl);
+        }
+    }
+
+    /**
+     * 🔧 NEW: Try Waze with multiple URL formats
+     */
+    tryWaze(endLat, endLng, startLat, startLng) {
+        const wazeUrls = [
+            // Formato 1: Solo destino (más confiable)
+            `https://waze.com/ul?ll=${endLat}%2C${endLng}&navigate=yes`,
+            
+            // Formato 2: Con origen y destino
+            `https://www.waze.com/live-map/directions?to=ll.${endLat}%2C${endLng}&from=ll.${startLat}%2C${startLng}`,
+            
+            // Formato 3: Esquema URL de app
+            `waze://?ll=${endLat},${endLng}&navigate=yes`,
+            
+            // Formato 4: Navegación directa
+            `https://waze.com/ul?q=${endLat}%2C${endLng}&navigate=yes`,
+            
+            // Formato 5: Formato legacy
+            `https://www.waze.com/es/live-map/directions?latlng=${endLat}%2C${endLng}&navigate=yes`
+        ];
+        
+        this.tryMultipleUrls(wazeUrls, 'Waze');
+    }
+
+    /**
+     * 🔧 NEW: Try multiple URLs in sequence
+     */
+    tryMultipleUrls(urls, appName) {
+        console.log(`🔗 Trying ${urls.length} URLs for ${appName}:`, urls);
+        
+        // Intentar el primer URL
+        try {
+            window.location.href = urls[0];
+            showToast(`Opening ${appName}...`, 'info', 3000);
+        } catch (error) {
+            console.error(`Error with first URL for ${appName}:`, error);
+        }
+        
+        // Fallback tras 1 segundo si el primero falla
+        setTimeout(() => {
+            if (urls[1]) {
+                try {
+                    window.open(urls[1], '_blank');
+                } catch (error) {
+                    console.error(`Error with second URL for ${appName}:`, error);
+                    
+                    // Último fallback tras otro segundo
+                    setTimeout(() => {
+                        if (urls[2]) {
+                            try {
+                                window.open(urls[2], '_blank');
+                            } catch (error) {
+                                console.error(`All URLs failed for ${appName}:`, error);
+                                showToast(`Could not open ${appName}. Try copying coordinates.`, 'error', 4000);
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+        }, 1000);
+        
+        // Cerrar popup después de un momento
+        setTimeout(() => {
+            document.querySelectorAll('.mapboxgl-popup').forEach(popup => popup.remove());
+        }, 2000);
+    }
     fallbackCopyCoordinates(text) {
         const textArea = document.createElement('textarea');
         textArea.value = text;
